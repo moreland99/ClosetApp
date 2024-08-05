@@ -1,3 +1,4 @@
+// App.tsx
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -7,6 +8,8 @@ import Login from './src/screens/Login';
 import Closet from './src/screens/Closet';
 import ShuffleScreen from './src/screens/ShuffleScreen';
 import CreateAccount from './src/screens/CreateAccount';
+import FavoritesScreen from './src/screens/FavoritesScreen';
+import { ClothesProvider } from './src/contexts/ClothesContext';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { FIREBASE_AUTH } from './src/firebase/firebaseConfig';
 import { Appearance, useColorScheme } from 'react-native';
@@ -26,6 +29,8 @@ function InsideLayout() {
             iconName = 'checkroom';
           } else if (route.name === 'Shuffle') {
             iconName = 'shuffle';
+          } else if (route.name === 'Favorites') {
+            iconName = 'favorite';
           }
 
           return <MaterialIcons name={iconName} size={size} color={color} />;
@@ -35,7 +40,8 @@ function InsideLayout() {
       })}
     >
       <Tab.Screen name="Closet" component={Closet} />
-      <Tab.Screen name="Shuffle" component={ShuffleScreen} initialParams={{ clothes: [] }} />
+      <Tab.Screen name="Shuffle" component={ShuffleScreen} />
+      <Tab.Screen name="Favorites" component={FavoritesScreen} />
     </Tab.Navigator>
   );
 }
@@ -52,19 +58,21 @@ export default function App() {
   }, []);
 
   return (
-    <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {user ? (
-          <>
-            <Stack.Screen name="InsideLayout" component={InsideLayout} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Login" component={Login} />
-            <Stack.Screen name="CreateAccount" component={CreateAccount} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <ClothesProvider>
+      <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {user ? (
+            <>
+              <Stack.Screen name="InsideLayout" component={InsideLayout} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Login" component={Login} />
+              <Stack.Screen name="CreateAccount" component={CreateAccount} />
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ClothesProvider>
   );
 }
