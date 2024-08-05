@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as FileSystem from 'expo-file-system';
+import { Buffer } from 'buffer';
 
 const REMOVE_BG_API_KEY = '4MPLWRbb7Fx6XimP8JF3sfd7';  // Replace with your actual API key
 
@@ -27,7 +28,7 @@ export const removeBackground = async (imageUri: string) => {
             throw new Error(`Error: ${response.status} ${response.statusText}`);
         }
 
-        const base64Image = `data:image/png;base64,${Buffer.from(response.data, 'binary').toString('base64')}`;
+        const base64Image = `data:image/png;base64,${Buffer.from(response.data).toString('base64')}`;
         const fileUri = `${FileSystem.documentDirectory}${Date.now()}.png`;
         await FileSystem.writeAsStringAsync(fileUri, base64Image.replace('data:image/png;base64,', ''), {
             encoding: FileSystem.EncodingType.Base64,
@@ -39,3 +40,4 @@ export const removeBackground = async (imageUri: string) => {
         throw error;
     }
 };
+

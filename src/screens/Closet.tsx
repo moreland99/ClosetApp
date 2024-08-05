@@ -1,22 +1,56 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Modal, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialIcons } from '@expo/vector-icons';
-import CategoryModal from '../components/CategoryModal';
-import { removeBackground } from '../utils/removeBackground';
-import { shuffleOutfits } from '../utils/shuffleOutfits';
-import { commonStyles } from '../styles/commonStyles';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import CategoryModal from '@components/CategoryModal';
+import { removeBackground } from '@utils/removeBackground';
+import { commonStyles } from '@styles/commonStyles';
+import axios from 'axios';
 
 interface ClothingItem {
     uri: string;
     category: string;
 }
 
+const categoryOrder = ['Hat', 'Jacket', 'Shirt', 'Pants', 'Shoes', 'Accessories'];
+
+const STORAGE_KEY = '@clothes';
+
 const Closet = () => {
     const [clothes, setClothes] = useState<ClothingItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
+    const navigation = useNavigation();
+
+    useEffect(() => {
+        loadClothes();
+    }, []);
+
+    useEffect(() => {
+        saveClothes();
+    }, [clothes]);
+
+    const loadClothes = async () => {
+        try {
+            const storedClothes = await AsyncStorage.getItem(STORAGE_KEY);
+            if (storedClothes) {
+                setClothes(JSON.parse(storedClothes));
+            }
+        } catch (error) {
+            console.error('Failed to load clothes from storage:', error);
+        }
+    };
+
+    const saveClothes = async () => {
+        try {
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(clothes));
+        } catch (error) {
+            console.error('Failed to save clothes to storage:', error);
+        }
+    };
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -26,52 +60,86 @@ const Closet = () => {
             quality: 1,
         });
 
-        if (!result.canceled) {
-            setSelectedImageUri(result.uri);
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const selectedAsset = result.assets[0];
+            setSelectedImageUri(selectedAsset.uri);
             setModalVisible(true);
         }
     };
 
     const onCategorySelect = async (category: string) => {
+        if (!selectedImageUri) {
+            console.error('No image selected');
+            return;
+        }
+
         setLoading(true);
+        console.log('Selected Image URI:', selectedImageUri);
+
         try {
-            const bgRemoved = await removeBackground(selectedImageUri!);
-            setClothes([...clothes, { uri: bgRemoved.result_b64, category }]);
-        } catch (error) {
-            console.error(error);
+            const bgRemoved = await removeBackground(selectedImageUri);
+            const newClothes = [...clothes, { uri: bgRemoved.result_b64, category }];
+            newClothes.sort((a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category));
+            setClothes(newClothes);
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error)) {
+                console.error('Axios error response data:', error.response?.data);
+            } else if (error instanceof Error) {
+                console.error('Error message:', error.message);
+            } else {
+                console.error('Unexpected error:', error);
+            }
         } finally {
             setLoading(false);
+            setModalVisible(false);
         }
     };
 
-    const renderItem = ({ item }: { item: ClothingItem }) => (
-        <View style={styles.clothingItem}>
-            <Image source={{ uri: item.uri }} style={styles.clothingImage} />
-            <Text style={styles.clothingText}>{item.category}</Text>
+    const removeClothingItem = (category: string, index: number) => {
+        const newClothes = clothes.filter((item, i) => !(item.category === category && i === index));
+        setClothes(newClothes);
+    };
+
+    const groupClothesByCategory = () => {
+        return categoryOrder.map(category => ({
+            category,
+            items: clothes.filter(item => item.category === category),
+        }));
+    };
+
+    const renderCategory = ({ item }: { item: { category: string, items: ClothingItem[] } }) => (
+        <View key={item.category} style={styles.categoryContainer}>
+            <Text style={styles.categoryTitle}>{item.category}</Text>
+            <FlatList
+                data={item.items}
+                renderItem={({ item, index }) => (
+                    <View style={styles.clothingItem}>
+                        <Image source={{ uri: item.uri }} style={styles.clothingImage} />
+                        <TouchableOpacity onPress={() => removeClothingItem(item.category, index)} style={styles.removeButton}>
+                            <MaterialIcons name="remove-circle" size={24} color="red" />
+                        </TouchableOpacity>
+                    </View>
+                )}
+                keyExtractor={(item, index) => `${item.category}-${index}`}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.horizontalList}
+            />
         </View>
     );
-
-    const shuffle = () => {
-        const outfits = shuffleOutfits(clothes);
-        console.log(outfits);
-    };
 
     return (
         <View style={styles.container}>
             <Text style={styles.title}>My Closet</Text>
             <FlatList
-                data={clothes}
-                renderItem={renderItem}
-                keyExtractor={(item, index) => index.toString()}
-                numColumns={2}
+                data={groupClothesByCategory()}
+                renderItem={renderCategory}
+                keyExtractor={(item) => item.category}
                 style={styles.flatList}
                 contentContainerStyle={styles.flatListContent}
             />
             <TouchableOpacity style={styles.addButton} onPress={pickImage}>
                 <MaterialIcons name="add" size={24} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.shuffleButton} onPress={shuffle}>
-                <Text style={styles.shuffleButtonText}>Shuffle Outfits</Text>
             </TouchableOpacity>
             <CategoryModal
                 visible={modalVisible}
@@ -98,12 +166,23 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     flatListContent: {
-        justifyContent: 'center',
-        alignItems: 'center',
+        paddingBottom: 20,
+    },
+    categoryContainer: {
+        marginBottom: 20,
+    },
+    categoryTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#ffffff',
+        marginLeft: 10,
+        marginBottom: 10,
+    },
+    horizontalList: {
+        paddingLeft: 10,
     },
     clothingItem: {
-        flex: 1,
-        margin: 10,
+        marginRight: 10,
         alignItems: 'center',
     },
     clothingImage: {
@@ -111,9 +190,10 @@ const styles = StyleSheet.create({
         height: 150,
         borderRadius: 10,
     },
-    clothingText: {
-        marginTop: 10,
-        color: '#ffffff',
+    removeButton: {
+        position: 'absolute',
+        top: 5,
+        right: 5,
     },
     addButton: {
         backgroundColor: '#007BFF',
@@ -125,18 +205,6 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 20,
         right: 20,
-    },
-    shuffleButton: {
-        backgroundColor: '#007BFF',
-        padding: 15,
-        borderRadius: 5,
-        alignItems: 'center',
-        marginTop: 20,
-    },
-    shuffleButtonText: {
-        color: '#ffffff',
-        fontSize: 18,
-        fontWeight: 'bold',
     },
     loadingContainer: {
         flex: 1,

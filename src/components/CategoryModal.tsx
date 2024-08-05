@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-
-const categories = ['Shirt', 'Jacket', 'Pants', 'Shorts', 'Shoes', 'Uncategorized'];
+import React from 'react';
+import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { commonStyles } from '@styles/commonStyles';
 
 interface CategoryModalProps {
     visible: boolean;
@@ -10,31 +8,33 @@ interface CategoryModalProps {
     onCategorySelect: (category: string) => void;
 }
 
-const CategoryModal: React.FC<CategoryModalProps> = ({ visible, onClose, onCategorySelect }) => {
-    const [selectedCategory, setSelectedCategory] = useState('Uncategorized');
+const categories = ['Hat', 'Jacket', 'Shirt', 'Pants', 'Shoes', 'Accessories'];
 
+const CategoryModal: React.FC<CategoryModalProps> = ({ visible, onClose, onCategorySelect }) => {
     return (
-        <Modal transparent={true} visible={visible} animationType="slide">
-            <View style={styles.modalContainer}>
-                <View style={styles.modalContent}>
+        <Modal
+            animationType="slide"
+            transparent={true}
+            visible={visible}
+            onRequestClose={onClose}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
                     <Text style={styles.modalTitle}>Select Category</Text>
-                    <Picker
-                        selectedValue={selectedCategory}
-                        onValueChange={(itemValue) => setSelectedCategory(itemValue)}
-                        style={styles.picker}
-                    >
-                        {categories.map((category) => (
-                            <Picker.Item key={category} label={category} value={category} />
-                        ))}
-                    </Picker>
-                    <TouchableOpacity
-                        style={styles.modalButton}
-                        onPress={() => {
-                            onCategorySelect(selectedCategory);
-                            onClose();
-                        }}
-                    >
-                        <Text style={styles.modalButtonText}>Done</Text>
+                    {categories.map((category) => (
+                        <TouchableOpacity
+                            key={category}
+                            style={styles.categoryButton}
+                            onPress={() => {
+                                onCategorySelect(category);
+                                onClose();
+                            }}
+                        >
+                            <Text style={styles.categoryButtonText}>{category}</Text>
+                        </TouchableOpacity>
+                    ))}
+                    <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                        <Text style={styles.closeButtonText}>Close</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -42,38 +42,50 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ visible, onClose, onCateg
     );
 };
 
-export default CategoryModal;
-
 const styles = StyleSheet.create({
-    modalContainer: {
+    ...commonStyles,
+    modalOverlay: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
-    modalContent: {
+    modalContainer: {
         width: '80%',
         padding: 20,
-        backgroundColor: '#1e1e1e',
+        backgroundColor: 'white',
         borderRadius: 10,
         alignItems: 'center',
     },
     modalTitle: {
         fontSize: 20,
+        fontWeight: 'bold',
         marginBottom: 20,
-        color: '#ffffff',
     },
-    picker: {
-        width: '100%',
-        color: '#ffffff',
-    },
-    modalButton: {
-        marginTop: 20,
-        backgroundColor: '#007BFF',
+    categoryButton: {
         padding: 10,
+        backgroundColor: '#007BFF',
         borderRadius: 5,
+        marginBottom: 10,
+        width: '100%',
+        alignItems: 'center',
     },
-    modalButtonText: {
-        color: '#ffffff',
+    categoryButtonText: {
+        color: 'white',
+        fontSize: 16,
+    },
+    closeButton: {
+        padding: 10,
+        backgroundColor: '#FF0000',
+        borderRadius: 5,
+        marginTop: 20,
+        width: '100%',
+        alignItems: 'center',
+    },
+    closeButtonText: {
+        color: 'white',
+        fontSize: 16,
     },
 });
+
+export default CategoryModal;
