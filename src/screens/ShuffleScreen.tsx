@@ -1,17 +1,19 @@
-// src/screens/ShuffleScreen.tsx
 import React, { useState } from 'react';
 import { View, ScrollView, Image, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { useRoute } from '@react-navigation/native';
+import { ShuffleScreenRouteProp } from '../navigationTypes';
 import { useClothes } from '../contexts/ClothesContext';
 import { commonStyles } from '../styles/commonStyles';
 import { ClothingItem } from '../navigationTypes';
 
 const ShuffleScreen = () => {
+  const route = useRoute<ShuffleScreenRouteProp>();
   const { clothes, favorites, setFavorites } = useClothes();
 
-  const [shuffledClothes, setShuffledClothes] = useState(() => shuffleClothes(clothes));
+  const [shuffledClothes, setShuffledClothes] = useState<{ [key: string]: ClothingItem }>(() => shuffleClothes(clothes));
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  function shuffleClothes(clothes: ClothingItem[]) {
+  function shuffleClothes(clothes: ClothingItem[]): { [key: string]: ClothingItem } {
     const categories = ['Hat', 'Accessories', 'Jacket', 'Shirt', 'Pants', 'Shoes'];
     return categories.reduce((acc, category) => {
       const items = clothes.filter(item => item.category === category);
@@ -103,7 +105,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   saveButton: {
-    backgroundColor: 'blue',
+    backgroundColor: 'green',
     padding: 15,
     borderRadius: 10,
     marginTop: 20,

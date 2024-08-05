@@ -1,4 +1,3 @@
-// src/contexts/ClothesContext.tsx
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { ClothingItem } from '../navigationTypes';
 
@@ -29,3 +28,4 @@ export const ClothesProvider = ({ children }: { children: ReactNode }) => {
     </ClothesContext.Provider>
   );
 };
+
