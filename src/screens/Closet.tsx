@@ -1,3 +1,4 @@
+// src/screens/Closet.tsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Modal, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -227,4 +228,3 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
 });
-

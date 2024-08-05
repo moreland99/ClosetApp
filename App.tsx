@@ -1,4 +1,3 @@
-// App.tsx
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -12,7 +11,6 @@ import { User, onAuthStateChanged } from 'firebase/auth';
 import { FIREBASE_AUTH } from './src/firebase/firebaseConfig';
 import { Appearance, useColorScheme } from 'react-native';
 import { RootStackParamList } from './src/navigationTypes';
-import { ClothesProvider } from './src/contexts/ClothesContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -37,7 +35,7 @@ function InsideLayout() {
       })}
     >
       <Tab.Screen name="Closet" component={Closet} />
-      <Tab.Screen name="Shuffle" component={ShuffleScreen} />
+      <Tab.Screen name="Shuffle" component={ShuffleScreen} initialParams={{ clothes: [] }} />
     </Tab.Navigator>
   );
 }
@@ -54,21 +52,19 @@ export default function App() {
   }, []);
 
   return (
-    <ClothesProvider>
-      <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {user ? (
-            <>
-              <Stack.Screen name="InsideLayout" component={InsideLayout} />
-            </>
-          ) : (
-            <>
-              <Stack.Screen name="Login" component={Login} />
-              <Stack.Screen name="CreateAccount" component={CreateAccount} />
-            </>
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
-    </ClothesProvider>
+    <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {user ? (
+          <>
+            <Stack.Screen name="InsideLayout" component={InsideLayout} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Login" component={Login} />
+            <Stack.Screen name="CreateAccount" component={CreateAccount} />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
