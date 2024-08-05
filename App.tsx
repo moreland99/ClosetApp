@@ -1,21 +1,44 @@
+// App.tsx
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { MaterialIcons } from '@expo/vector-icons';
 import Login from './src/screens/Login';
 import Closet from './src/screens/Closet';
+import ShuffleScreen from './src/screens/ShuffleScreen';
 import CreateAccount from './src/screens/CreateAccount';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { FIREBASE_AUTH } from './src/firebase/firebaseConfig';
 import { Appearance, useColorScheme } from 'react-native';
+import { RootStackParamList } from './src/navigationTypes';
+import { ClothesProvider } from './src/contexts/ClothesContext';
 
-const Stack = createNativeStackNavigator();
-const InsideStack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator();
 
 function InsideLayout() {
   return (
-    <InsideStack.Navigator>
-      <InsideStack.Screen name="InsideCloset" component={Closet} />
-    </InsideStack.Navigator>
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          if (route.name === 'Closet') {
+            iconName = 'checkroom';
+          } else if (route.name === 'Shuffle') {
+            iconName = 'shuffle';
+          }
+
+          return <MaterialIcons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: 'tomato',
+        tabBarInactiveTintColor: 'gray',
+      })}
+    >
+      <Tab.Screen name="Closet" component={Closet} />
+      <Tab.Screen name="Shuffle" component={ShuffleScreen} />
+    </Tab.Navigator>
   );
 }
 
@@ -24,24 +47,28 @@ export default function App() {
   const scheme = useColorScheme();
 
   useEffect(() => {
-    onAuthStateChanged(FIREBASE_AUTH, (user) => {
-      console.log('user', user);
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (authenticatedUser) => {
+      authenticatedUser ? setUser(authenticatedUser) : setUser(null);
     });
+    return () => unsubscribe();
   }, []);
 
   return (
-    <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack.Navigator initialRouteName="LoginScreen">
-        {user ? (
-          <Stack.Screen name="InsideCloset" component={InsideLayout} options={{ headerShown: false }} />
-        ) : (
-          <>
-            <Stack.Screen name="LoginScreen" component={Login} options={{ headerShown: false }} />
-            <Stack.Screen name="CreateAccountScreen" component={CreateAccount} options={{ headerShown: false }} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <ClothesProvider>
+      <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {user ? (
+            <>
+              <Stack.Screen name="InsideLayout" component={InsideLayout} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Login" component={Login} />
+              <Stack.Screen name="CreateAccount" component={CreateAccount} />
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ClothesProvider>
   );
 }

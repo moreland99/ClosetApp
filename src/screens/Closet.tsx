@@ -8,11 +8,7 @@ import CategoryModal from '@components/CategoryModal';
 import { removeBackground } from '@utils/removeBackground';
 import { commonStyles } from '@styles/commonStyles';
 import axios from 'axios';
-
-interface ClothingItem {
-    uri: string;
-    category: string;
-}
+import { ClothingItem, ShuffleScreenNavigationProp } from '../navigationTypes';
 
 const categoryOrder = ['Hat', 'Jacket', 'Shirt', 'Pants', 'Shoes', 'Accessories'];
 
@@ -23,7 +19,7 @@ const Closet = () => {
     const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
-    const navigation = useNavigation();
+    const navigation = useNavigation<ShuffleScreenNavigationProp>();
 
     useEffect(() => {
         loadClothes();
@@ -128,6 +124,10 @@ const Closet = () => {
         </View>
     );
 
+    const navigateToShuffle = () => {
+        navigation.navigate('Shuffle', { clothes });
+    };
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>My Closet</Text>
@@ -140,6 +140,9 @@ const Closet = () => {
             />
             <TouchableOpacity style={styles.addButton} onPress={pickImage}>
                 <MaterialIcons name="add" size={24} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.shuffleButton} onPress={navigateToShuffle}>
+                <MaterialIcons name="shuffle" size={24} color="white" />
             </TouchableOpacity>
             <CategoryModal
                 visible={modalVisible}
@@ -206,6 +209,17 @@ const styles = StyleSheet.create({
         bottom: 20,
         right: 20,
     },
+    shuffleButton: {
+        backgroundColor: 'tomato',
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'absolute',
+        bottom: 90,
+        right: 20,
+    },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -213,3 +227,4 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
 });
+
