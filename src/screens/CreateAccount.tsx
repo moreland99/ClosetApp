@@ -1,15 +1,16 @@
-import { View, Text, StyleSheet, TextInput, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { FIREBASE_AUTH } from '../firebase/firebaseConfig';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
-import { LoginScreenNavigationProp } from '../navigationTypes';
+import { CreateAccountScreenNavigationProp } from '../navigationTypes';
 import { commonStyles } from '../styles/commonStyles';
 
-const Login = () => {
-    const navigation = useNavigation<LoginScreenNavigationProp>();
+const CreateAccount = () => {
+    const navigation = useNavigation<CreateAccountScreenNavigationProp>();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const auth = FIREBASE_AUTH;
 
@@ -22,7 +23,7 @@ const Login = () => {
         return password.length >= 6;
     };
 
-    const signIn = async () => {
+    const signUp = async () => {
         if (!isValidEmail(email)) {
             Alert.alert('Invalid Email', 'Please enter a valid email address.');
             return;
@@ -31,13 +32,19 @@ const Login = () => {
             Alert.alert('Invalid Password', 'Password must be at least 6 characters long.');
             return;
         }
+        if (password !== confirmPassword) {
+            Alert.alert('Password Mismatch', 'Passwords do not match.');
+            return;
+        }
         setLoading(true);
         try {
-            const response = await signInWithEmailAndPassword(auth, email, password);
+            const response = await createUserWithEmailAndPassword(auth, email, password);
             console.log(response);
+            Alert.alert('Account created successfully!');
+            navigation.navigate('Login'); // Navigate back to Login screen
         } catch (error: any) {
             console.log(error);
-            Alert.alert('Sign in failed: ' + error.message);
+            Alert.alert('Sign up failed: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -45,7 +52,7 @@ const Login = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Login</Text>
+            <Text style={styles.title}>Create Account</Text>
             <TextInput
                 style={styles.input}
                 placeholder='Email'
@@ -63,25 +70,30 @@ const Login = () => {
                 onChangeText={setPassword}
                 placeholderTextColor="#a9a9a9"
             />
+            <TextInput
+                secureTextEntry={true}
+                style={styles.input}
+                placeholder='Confirm Password'
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholderTextColor="#a9a9a9"
+            />
             {loading ? (
                 <ActivityIndicator size="large" color="#007BFF" />
             ) : (
-                <>
-                    <TouchableOpacity style={styles.button} onPress={signIn}>
-                        <Text style={styles.buttonText}>Login</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.linkButton} onPress={() => navigation.navigate('CreateAccount')}>
-                        <Text style={styles.linkButtonText}>Create Account</Text>
-                    </TouchableOpacity>
-                </>
+                <TouchableOpacity style={styles.button} onPress={signUp}>
+                    <Text style={styles.buttonText}>Create Account</Text>
+                </TouchableOpacity>
             )}
+            <TouchableOpacity style={styles.linkButton} onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.linkButtonText}>Back to Login</Text>
+            </TouchableOpacity>
         </View>
     );
 };
 
-export default Login;
+export default CreateAccount;
 
 const styles = StyleSheet.create({
     ...commonStyles,
 });
-
