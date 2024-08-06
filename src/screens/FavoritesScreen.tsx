@@ -54,16 +54,25 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 20,
     alignItems: 'center',
+    backgroundColor: '#121212', // Dark background
   },
   favoriteContainer: {
     marginVertical: 20,
     alignItems: 'center',
     width: '100%',
+    backgroundColor: '#1f1f1f', // Slightly lighter than the background
+    borderRadius: 10,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   favoriteTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'black',
+    color: '#ffffff', // Light text
     marginBottom: 10,
   },
   itemContainer: {
@@ -73,9 +82,19 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 10,
+    marginBottom: 10,
   },
   removeButton: {
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
     marginTop: 10,
+    width: '80%',
+  },
+  removeButtonText: {
+    color: '#ffffff', // Light text
+    fontSize: 16,
   },
   flatListContent: {
     alignItems: 'center',

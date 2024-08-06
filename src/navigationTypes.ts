@@ -5,6 +5,10 @@ import { RouteProp } from '@react-navigation/native';
 export interface ClothingItem {
     uri: string;
     category: string;
+    name: string;
+    color: string;
+    brand: string;
+    price: string;
 }
 
 export type RootStackParamList = {

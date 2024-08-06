@@ -80,6 +80,7 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     alignItems: 'center',
+    backgroundColor: '#121212', // Dark background
   },
   rowContainer: {
     flexDirection: 'row',
@@ -93,12 +94,19 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 10,
+    marginBottom: 10,
   },
   shuffleButton: {
     backgroundColor: 'tomato',
     padding: 15,
     borderRadius: 10,
     marginTop: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
   },
   shuffleButtonText: {
     color: '#fff',
@@ -109,6 +117,12 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     marginTop: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
   },
   saveButtonText: {
     color: '#fff',
