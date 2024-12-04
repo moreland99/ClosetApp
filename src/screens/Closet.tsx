@@ -17,7 +17,7 @@ const STORAGE_KEY = '@clothes';
 
 const Closet = () => {
   const [loading, setLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [newClothingItem, setNewClothingItem] = useState({ name: '', color: '', brand: '', price: '' });
   const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
@@ -63,7 +63,7 @@ const Closet = () => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const selectedAsset = result.assets[0];
       setSelectedImageUri(selectedAsset.uri);
-      setModalVisible(true);
+      setCategoryModalVisible(true);
     }
   };
 
@@ -74,7 +74,6 @@ const Closet = () => {
     }
 
     setLoading(true);
-    console.log('Selected Image URI:', selectedImageUri);
 
     try {
       const bgRemoved = await removeBackground(selectedImageUri);
@@ -92,11 +91,12 @@ const Closet = () => {
       }
     } finally {
       setLoading(false);
-      setModalVisible(false);
+      setCategoryModalVisible(false);
     }
   };
 
-  const confirmDelete = (category: string, index: number) => {
+  const confirmDelete = (itemUri: string) => {
+    console.log('Confirm delete called with URI:', itemUri);
     Alert.alert(
       "Confirm Delete",
       "Are you sure you want to delete this item?",
@@ -105,16 +105,21 @@ const Closet = () => {
           text: "Cancel",
           style: "cancel"
         },
-        { text: "OK", onPress: () => removeClothingItem(category, index) }
+        { text: "OK", onPress: () => removeClothingItem(itemUri) }
       ]
     );
   };
+  
 
-  const removeClothingItem = (category: string, index: number) => {
-    const newClothes = clothes.filter((item, i) => !(item.category === category && i === index));
-    setClothes(newClothes);
+  const removeClothingItem = (itemUri: string) => {
+    console.log('Remove clothing item called with URI:', itemUri);
+    setClothes(prevClothes => {
+      const newClothes = prevClothes.filter(item => item.uri !== itemUri);
+      console.log('Updated clothes after deletion:', newClothes);
+      return newClothes;
+    });
   };
-
+  
   const groupClothesByCategory = () => {
     return categoryOrder.map(category => ({
       category,
@@ -143,7 +148,7 @@ const Closet = () => {
       <Text style={styles.categoryTitle}>{item.category}</Text>
       <FlatList
         data={item.items}
-        renderItem={({ item, index }) => (
+        renderItem={({ item }) => (
           <TouchableOpacity style={styles.clothingItem} onPress={() => openEditModal(item)}>
             <Image source={{ uri: item.uri }} style={styles.clothingImage} />
             {selectedItem?.uri === item.uri && (
@@ -179,20 +184,21 @@ const Closet = () => {
                 <TouchableOpacity onPress={saveItemDetails} style={styles.saveButton}>
                   <Text style={styles.buttonText}>Save</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => confirmDelete(item.category, index)} style={styles.removeButton}>
-                  <MaterialIcons name="remove-circle" size={24} color="red" />
+                <TouchableOpacity onPress={() => confirmDelete(item.uri)} style={styles.removeButton}>
+                  <MaterialIcons name="delete" size={24} color="white" />
                 </TouchableOpacity>
               </View>
             )}
           </TouchableOpacity>
         )}
-        keyExtractor={(item, index) => `${item.category}-${index}`}
+        keyExtractor={(item, index) => `${item.uri}-${index}`} // Ensure unique key
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.horizontalList}
       />
     </View>
   );
+  
 
   const navigateToShuffle = () => {
     navigation.navigate('Shuffle', { clothes });
@@ -214,6 +220,11 @@ const Closet = () => {
       <TouchableOpacity style={styles.shuffleButton} onPress={navigateToShuffle}>
         <MaterialIcons name="shuffle" size={24} color="white" />
       </TouchableOpacity>
+      <CategoryModal
+        visible={categoryModalVisible}
+        onClose={() => setCategoryModalVisible(false)}
+        onCategorySelect={onCategorySelect}
+      />
       {loading && (
         <Modal transparent={true}>
           <View style={styles.loadingContainer}>
@@ -228,153 +239,121 @@ const Closet = () => {
 export default Closet;
 
 const styles = StyleSheet.create({
-    ...commonStyles,
-    container: {
-      flex: 1,
-      backgroundColor: '#121212', // Dark background
-    },
-    title: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: '#ffffff', // Light text
-      textAlign: 'center',
-      marginVertical: 20,
-    },
-    flatList: {
-      flex: 1,
-      width: '100%',
-    },
-    flatListContent: {
-      paddingBottom: 20,
-      paddingHorizontal: 10,
-    },
-    categoryContainer: {
-      marginBottom: 20,
-    },
-    categoryTitle: {
-      fontSize: 22,
-      fontWeight: 'bold',
-      color: '#ffffff', // Light text
-      marginLeft: 10,
-      marginBottom: 10,
-    },
-    horizontalList: {
-      paddingLeft: 10,
-    },
-    clothingItem: {
-      marginRight: 10,
-      alignItems: 'center',
-      backgroundColor: '#1f1f1f', // Slightly lighter than the background
-      borderRadius: 10,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-      padding: 10,
-      marginBottom: 10,
-    },
-    clothingImage: {
-      width: 150,
-      height: 150,
-      borderRadius: 10,
-      marginBottom: 10,
-    },
-    itemLabel: {
-      color: '#ffffff', // Light text
-      fontSize: 14,
-      marginVertical: 2,
-      paddingHorizontal: 5,
-      backgroundColor: '#333', // Dark background
-      borderRadius: 5,
-      padding: 5,
-    },
-    removeButton: {
-      position: 'absolute',
-      top: 10,
-      right: 10,
-    },
-    addButton: {
-      backgroundColor: '#007BFF',
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'absolute',
-      bottom: 20,
-      right: 20,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 5,
-      elevation: 5,
-    },
-    shuffleButton: {
-      backgroundColor: 'tomato',
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'absolute',
-      bottom: 90,
-      right: 20,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 5,
-      elevation: 5,
-    },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    modalContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    modalContent: {
-      width: '80%',
-      backgroundColor: '#333', // Dark background
-      borderRadius: 10,
-      padding: 20,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 5,
-      elevation: 5,
-    },
-    input: {
-      backgroundColor: '#444', // Darker background
-      padding: 10,
-      borderRadius: 5,
-      marginVertical: 10,
-      fontSize: 16,
-      color: '#ffffff', // Light text
-    },
-    modalButton: {
-      backgroundColor: '#007BFF',
-      padding: 15,
-      borderRadius: 5,
-      alignItems: 'center',
-      marginTop: 20,
-    },
-    saveButton: {
-      backgroundColor: '#007BFF',
-      padding: 15,
-      borderRadius: 5,
-      alignItems: 'center',
-      marginTop: 20,
-    },
-    buttonText: {
-      color: '#ffffff', // Light text
-      fontSize: 16,
-    },
-  });
-  
-  
+  ...commonStyles,
+  container: {
+    flex: 1,
+    backgroundColor: '#121212', // Dark background
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff', // Light text
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+  flatList: {
+    flex: 1,
+    width: '100%',
+  },
+  flatListContent: {
+    paddingBottom: 20,
+    paddingHorizontal: 10,
+  },
+  categoryContainer: {
+    marginBottom: 20,
+  },
+  categoryTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#ffffff', // Light text
+    marginLeft: 10,
+    marginBottom: 10,
+  },
+  horizontalList: {
+    paddingLeft: 10,
+  },
+  clothingItem: {
+    marginRight: 10,
+    alignItems: 'center',
+    backgroundColor: '#1f1f1f', // Slightly lighter than the background
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    padding: 10,
+    marginBottom: 10,
+  },
+  clothingImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  itemLabel: {
+    color: '#ffffff', // Light text
+    fontSize: 14,
+    marginVertical: 2,
+    paddingHorizontal: 5,
+    backgroundColor: '#333', // Dark background
+    borderRadius: 5,
+    padding: 5,
+  },
+  removeButton: {
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  saveButton: {
+    backgroundColor: '#007BFF',
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  buttonText: {
+    color: '#ffffff', // Light text
+    fontSize: 16,
+  },
+  addButton: {
+    backgroundColor: '#007BFF',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  shuffleButton: {
+    backgroundColor: 'tomato',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+    bottom: 90,
+    right: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+});
