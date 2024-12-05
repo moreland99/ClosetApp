@@ -31,8 +31,9 @@ const Closet = () => {
   const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
   const { clothes, setClothes } = useClothes();
   const navigation = useNavigation<ShuffleScreenNavigationProp>();
+  const [forceRender, setForceRender] = useState(false); // Add this state
 
-  // Load and Save Clothes to AsyncStorage
+  // Load clothes from AsyncStorage
   useEffect(() => {
     (async () => {
       const storedClothes = await AsyncStorage.getItem(STORAGE_KEY);
@@ -40,6 +41,7 @@ const Closet = () => {
     })();
   }, []);
 
+  // Save clothes to AsyncStorage
   useEffect(() => {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(clothes)).catch((error) =>
       console.error('Failed to save clothes to storage:', error)
@@ -48,40 +50,41 @@ const Closet = () => {
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Correct usage
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
+  
     if (!result.canceled && result.assets.length > 0) {
-      setSelectedImageUri(result.assets[0].uri);
-      setCategoryModalVisible(true);
+      setSelectedImageUri(result.assets[0].uri); // Set selected image
+      setCategoryModalVisible(true); // Immediately open the modal
+      setForceRender((prev) => !prev); // Force a re-render
     }
   };
 
-  const onCategorySelect = useCallback(
-    async (category: string) => {
-      if (!selectedImageUri) return;
-      setLoading(true);
-      try {
-        const { result_b64 } = await removeBackground(selectedImageUri);
-        const newClothes = [
-          ...clothes,
-          { ...newClothingItem, uri: result_b64, category },
-        ].sort(
-          (a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category)
-        );
-        setClothes(newClothes);
-        setNewClothingItem({ name: '', color: '', brand: '', price: '' });
-      } catch (error) {
-        console.error('Error removing background:', error);
-      } finally {
-        setLoading(false);
-        setCategoryModalVisible(false);
-      }
-    },
-    [clothes, selectedImageUri, newClothingItem]
-  );
+  const onCategorySelect = async (category: string) => {
+    if (!selectedImageUri) return;
+
+    setLoading(true);
+    try {
+      const { result_b64 } = await removeBackground(selectedImageUri);
+      const newClothes = [
+        ...clothes,
+        { ...newClothingItem, uri: result_b64, category },
+      ].sort(
+        (a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category)
+      );
+      setClothes(newClothes);
+      setNewClothingItem({ name: '', color: '', brand: '', price: '' });
+      setCategoryModalVisible(false); // Close modal
+    } catch (error) {
+      console.error('Error removing background:', error);
+      Alert.alert('Error', 'Failed to process image.');
+    } finally {
+      setLoading(false); // Hide loading spinner
+    }
+  };
 
   const removeClothingItem = (itemUri: string) => {
     setClothes((prevClothes) => prevClothes.filter((item) => item.uri !== itemUri));
@@ -115,22 +118,21 @@ const Closet = () => {
       <Image source={{ uri: item.uri }} style={styles.clothingImage} />
       {selectedItem?.uri === item.uri && (
         <View>
-{['name', 'color', 'brand', 'price'].map((field) => (
-  <TextInput
-    key={field}
-    style={styles.itemLabel}
-    placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-    placeholderTextColor="#999"
-    value={(selectedItem as any)[field] || ''} // Provide a default value
-    onChangeText={(text) =>
-      setSelectedItem((prev) => {
-        if (!prev) return null;
-        return { ...prev, [field]: text || '' }; // Ensure all fields are strings
-      })
-    }
-  />
-))}
-
+          {['name', 'color', 'brand', 'price'].map((field) => (
+            <TextInput
+              key={field}
+              style={styles.itemLabel}
+              placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+              placeholderTextColor="#999"
+              value={(selectedItem as any)[field] || ''}
+              onChangeText={(text) =>
+                setSelectedItem((prev) => {
+                  if (!prev) return null;
+                  return { ...prev, [field]: text || '' };
+                })
+              }
+            />
+          ))}
           <TouchableOpacity onPress={saveItemDetails} style={styles.saveButton}>
             <Text style={styles.buttonText}>Save</Text>
           </TouchableOpacity>
@@ -175,11 +177,14 @@ const Closet = () => {
       >
         <MaterialIcons name="shuffle" size={24} color="white" />
       </TouchableOpacity>
-      <CategoryModal
-        visible={categoryModalVisible}
-        onClose={() => setCategoryModalVisible(false)}
-        onCategorySelect={onCategorySelect}
-      />
+      {categoryModalVisible && (
+        <CategoryModal
+          visible={categoryModalVisible}
+          onClose={() => setCategoryModalVisible(false)}
+          onCategorySelect={onCategorySelect}
+          loading={loading}
+        />
+      )}
       {loading && (
         <Modal transparent>
           <View style={styles.loadingContainer}>
@@ -192,6 +197,8 @@ const Closet = () => {
 };
 
 export default Closet;
+
+
 
 // Styles are unchanged
 
