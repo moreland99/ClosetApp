@@ -47,6 +47,7 @@ const Closet = () => {
       setClothes((prevClothes) => [
         ...prevClothes,
         {
+          id: Math.random().toString(), // Add missing 'id' property
           uri: result_b64,
           category,
           name: '',
@@ -62,6 +63,7 @@ const Closet = () => {
       setLoading(false);
     }
   };
+
 
   const renderClothingItem = ({ item }: { item: { uri: string } }) => (
     <TouchableOpacity style={tw`p-2 rounded-lg bg-gray-800 shadow-lg m-2`}>

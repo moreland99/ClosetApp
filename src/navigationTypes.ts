@@ -3,6 +3,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 
 export interface ClothingItem {
+    id: string;
     uri: string;
     category: string;
     name: string;
