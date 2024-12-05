@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -21,11 +21,7 @@ const Closet = () => {
   const [loading, setLoading] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
-  const { clothes, setClothes } = useClothes();
-
-  useEffect(() => {
-    // Fetch clothes from AsyncStorage here if necessary
-  }, []);
+  const { clothes, addClothingItem } = useClothes(); // Fetch Firestore data and save new items
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -44,18 +40,16 @@ const Closet = () => {
     setLoading(true);
     try {
       const { result_b64 } = await removeBackground(selectedImageUri);
-      setClothes((prevClothes) => [
-        ...prevClothes,
-        {
-          id: Math.random().toString(), // Add missing 'id' property
-          uri: result_b64,
-          category,
-          name: '',
-          color: '',
-          brand: '',
-          price: '',
-        },
-      ]);
+      const newItem = {
+        id: Date.now().toString(),
+        uri: result_b64,
+        category,
+        name: '', // Placeholder values
+        color: '',
+        brand: '',
+        price: '',
+      };
+      await addClothingItem(newItem); // Save to Firestore
       setCategoryModalVisible(false);
     } catch {
       Alert.alert('Error', 'Failed to process image.');
@@ -63,7 +57,6 @@ const Closet = () => {
       setLoading(false);
     }
   };
-
 
   const renderClothingItem = ({ item }: { item: { uri: string } }) => (
     <TouchableOpacity style={tw`p-2 rounded-lg bg-gray-800 shadow-lg m-2`}>

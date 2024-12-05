@@ -1,9 +1,9 @@
 import { initializeApp } from "firebase/app";
-import { initializeAuth, getAuth, browserLocalPersistence } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeAuth, browserLocalPersistence } from "firebase/auth";
+import { getFirestore, Firestore } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Firebase configuration for your app
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDletpsPeF8ZKACyo_mT7c2tzOZ-wozuHQ",
   authDomain: "closetapp-f5003.firebaseapp.com",
@@ -23,7 +23,8 @@ const FIREBASE_AUTH = initializeAuth(FIREBASE_APP, {
 });
 
 // Initialize Firestore
-const FIREBASE_FIRESTORE = getFirestore(FIREBASE_APP);
+const FIREBASE_FIRESTORE: Firestore = getFirestore(FIREBASE_APP);
 
 // Export modules
 export { FIREBASE_APP, FIREBASE_AUTH, FIREBASE_FIRESTORE };
+
