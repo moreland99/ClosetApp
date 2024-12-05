@@ -1,43 +1,65 @@
-// App.tsx
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MaterialIcons } from '@expo/vector-icons';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import Login from './src/screens/Login';
 import Closet from './src/screens/Closet';
 import ShuffleScreen from './src/screens/ShuffleScreen';
-import CreateAccount from './src/screens/CreateAccount';
 import FavoritesScreen from './src/screens/FavoritesScreen';
+import CreateAccount from './src/screens/CreateAccount';
 import { ClothesProvider } from './src/contexts/ClothesContext';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { FIREBASE_AUTH } from './src/firebase/firebaseConfig';
-import { Appearance, useColorScheme } from 'react-native';
-import { RootStackParamList } from './src/navigationTypes';
+import { useColorScheme, Appearance } from 'react-native';
 import { TailwindProvider } from 'tailwindcss-react-native';
+import { StatusBar } from 'expo-status-bar';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 function InsideLayout() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-
-          if (route.name === 'Closet') {
-            iconName = 'checkroom';
-          } else if (route.name === 'Shuffle') {
-            iconName = 'shuffle';
-          } else if (route.name === 'Favorites') {
-            iconName = 'favorite';
-          }
-
-          return <MaterialIcons name={iconName} size={size} color={color} />;
+        tabBarStyle: {
+          backgroundColor: '#121212', // Fully integrated dark background
+          borderTopWidth: 0, // Removes border for seamless integration
+          shadowColor: '#000', // Adds a subtle shadow for a polished look
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
         },
-        tabBarActiveTintColor: 'tomato',
-        tabBarInactiveTintColor: 'gray',
+        tabBarIcon: ({ color, size, focused }) => {
+          if (route.name === 'Closet') {
+            return (
+              <MaterialCommunityIcons
+                name={focused ? 'wardrobe' : 'wardrobe-outline'}
+                size={size}
+                color={color}
+              />
+            );
+          } else if (route.name === 'Shuffle') {
+            return (
+              <Ionicons
+                name={focused ? 'shuffle' : 'shuffle-outline'}
+                size={size}
+                color={color}
+              />
+            );
+          } else if (route.name === 'Favorites') {
+            return (
+              <Ionicons
+                name={focused ? 'heart' : 'heart-outline'}
+                size={size}
+                color={color}
+              />
+            );
+          }
+        },
+        tabBarActiveTintColor: '#4A90E2', // Modern blue accent for active tabs
+        tabBarInactiveTintColor: '#A9A9A9', // Neutral gray for inactive tabs
+        headerShown: false,
       })}
     >
       <Tab.Screen name="Closet" component={Closet} />
@@ -60,22 +82,22 @@ export default function App() {
 
   return (
     <TailwindProvider>
-    <ClothesProvider>
-      <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {user ? (
-            <>
+      <ClothesProvider>
+        <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            {user ? (
               <Stack.Screen name="InsideLayout" component={InsideLayout} />
-            </>
-          ) : (
-            <>
-              <Stack.Screen name="Login" component={Login} />
-              <Stack.Screen name="CreateAccount" component={CreateAccount} />
-            </>
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
-    </ClothesProvider>
+            ) : (
+              <>
+                <Stack.Screen name="Login" component={Login} />
+                <Stack.Screen name="CreateAccount" component={CreateAccount} />
+              </>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </ClothesProvider>
     </TailwindProvider>
   );
 }
+

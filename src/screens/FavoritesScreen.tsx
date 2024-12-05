@@ -1,7 +1,13 @@
 import React from 'react';
-import { View, FlatList, StyleSheet, TouchableOpacity, Text, Image } from 'react-native';
+import {
+  View,
+  FlatList,
+  TouchableOpacity,
+  Text,
+  Image,
+} from 'react-native';
+import tw from 'tailwind-react-native-classnames';
 import { useClothes } from '../contexts/ClothesContext';
-import { theme } from '../styles/theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ClothingItem } from '../navigationTypes';
 
@@ -13,74 +19,52 @@ const FavoritesScreen = () => {
   };
 
   const renderFavorite = ({ item, index }: { item: ClothingItem[], index: number }) => (
-    <View key={index} style={styles.favoriteContainer}>
-      <Text style={styles.favoriteTitle}>Favorite {index + 1}</Text>
+    <View key={index} style={tw`mb-6`}>
+      <Text style={tw`text-lg font-bold text-white mb-2 px-4`}>
+        Favorite {index + 1}
+      </Text>
       <FlatList
         data={item}
         renderItem={({ item }) => (
-          <View style={styles.itemContainer}>
-            <Image source={{ uri: item.uri }} style={styles.itemImage} />
+          <View style={tw`bg-gray-800 rounded-lg shadow-md m-2 p-2`}>
+            <Image source={{ uri: item.uri }} style={tw`h-40 w-40 rounded-md`} />
+            <Text style={tw`text-white text-center mt-2 text-sm font-bold`}>
+              {item.category}
+            </Text>
           </View>
         )}
         keyExtractor={(item, idx) => `${item.category}-${idx}`}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.horizontalFlatListContent}
+        contentContainerStyle={tw`px-2`}
       />
-      <TouchableOpacity onPress={() => removeFavorite(index)} style={styles.removeButton}>
-        <MaterialIcons name="delete" size={24} color="red" />
+      <TouchableOpacity
+        onPress={() => removeFavorite(index)}
+        style={tw`bg-red-600 p-2 rounded-lg self-center mt-4 shadow-lg`}
+      >
+        <MaterialIcons name="delete" size={24} color="white" />
       </TouchableOpacity>
     </View>
   );
 
   return (
-    <FlatList
-      data={favorites}
-      renderItem={renderFavorite}
-      keyExtractor={(item, index) => `favorite-${index}`}
-      contentContainerStyle={styles.flatListContent}
-      ListHeaderComponent={<Text style={styles.title}>Favorites</Text>} // Add header
-    />
+    <View style={{ backgroundColor: '#121212', flex: 1, paddingTop: 16 }}>
+      <Text style={tw`text-white text-2xl font-bold text-center mb-4`}>
+        Favorites
+      </Text>
+      <FlatList
+        data={favorites}
+        renderItem={renderFavorite}
+        keyExtractor={(item, index) => `favorite-${index}`}
+        contentContainerStyle={tw`pb-16`}
+        ListEmptyComponent={
+          <Text style={tw`text-gray-400 text-center mt-20`}>
+            No favorites added yet. Start saving outfits!
+          </Text>
+        }
+      />
+    </View>
   );
 };
 
 export default FavoritesScreen;
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  flatListContent: {
-    paddingBottom: 16,
-  },
-  favoriteContainer: {
-    marginBottom: 16,
-  },
-  favoriteTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  itemContainer: {
-    marginRight: 8,
-  },
-  itemImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
-  },
-  horizontalFlatListContent: {
-    paddingHorizontal: 8,
-  },
-  removeButton: {
-    marginTop: 8,
-    alignSelf: 'flex-end',
-  },
-});
