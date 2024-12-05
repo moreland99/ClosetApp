@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, FlatList, StyleSheet, TouchableOpacity, Text, Image, ScrollView } from 'react-native';
+import { View, FlatList, StyleSheet, TouchableOpacity, Text, Image } from 'react-native';
 import { useClothes } from '../contexts/ClothesContext';
-import { commonStyles } from '../styles/commonStyles';
+import { theme } from '../styles/theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ClothingItem } from '../navigationTypes';
 
@@ -34,73 +34,53 @@ const FavoritesScreen = () => {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Favorites</Text>
-      <FlatList
-        data={favorites}
-        renderItem={renderFavorite}
-        keyExtractor={(item, index) => `favorite-${index}`}
-        contentContainerStyle={styles.flatListContent}
-      />
-    </ScrollView>
+    <FlatList
+      data={favorites}
+      renderItem={renderFavorite}
+      keyExtractor={(item, index) => `favorite-${index}`}
+      contentContainerStyle={styles.flatListContent}
+      ListHeaderComponent={<Text style={styles.title}>Favorites</Text>} // Add header
+    />
   );
 };
 
 export default FavoritesScreen;
 
 const styles = StyleSheet.create({
-  ...commonStyles,
   container: {
     flexGrow: 1,
-    padding: 20,
-    alignItems: 'center',
-    backgroundColor: '#121212', // Dark background
+    padding: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  flatListContent: {
+    paddingBottom: 16,
   },
   favoriteContainer: {
-    marginVertical: 20,
-    alignItems: 'center',
-    width: '100%',
-    backgroundColor: '#1f1f1f', // Slightly lighter than the background
-    borderRadius: 10,
-    padding: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: 16,
   },
   favoriteTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffff', // Light text
-    marginBottom: 10,
+    marginBottom: 8,
   },
   itemContainer: {
-    marginHorizontal: 10,
+    marginRight: 8,
   },
   itemImage: {
     width: 100,
     height: 100,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  removeButton: {
-    backgroundColor: 'red',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginTop: 10,
-    width: '80%',
-  },
-  removeButtonText: {
-    color: '#ffffff', // Light text
-    fontSize: 16,
-  },
-  flatListContent: {
-    alignItems: 'center',
-    paddingBottom: 20,
+    borderRadius: 8,
   },
   horizontalFlatListContent: {
-    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  removeButton: {
+    marginTop: 8,
+    alignSelf: 'flex-end',
   },
 });

@@ -14,6 +14,7 @@ import { User, onAuthStateChanged } from 'firebase/auth';
 import { FIREBASE_AUTH } from './src/firebase/firebaseConfig';
 import { Appearance, useColorScheme } from 'react-native';
 import { RootStackParamList } from './src/navigationTypes';
+import { TailwindProvider } from 'tailwindcss-react-native';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -58,6 +59,7 @@ export default function App() {
   }, []);
 
   return (
+    <TailwindProvider>
     <ClothesProvider>
       <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -74,5 +76,6 @@ export default function App() {
         </Stack.Navigator>
       </NavigationContainer>
     </ClothesProvider>
+    </TailwindProvider>
   );
 }

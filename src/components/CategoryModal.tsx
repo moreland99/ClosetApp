@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { commonStyles } from '@styles/commonStyles';
+import { theme } from '@styles/theme';
 
 interface CategoryModalProps {
     visible: boolean;
@@ -43,7 +43,6 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ visible, onClose, onCateg
 };
 
 const styles = StyleSheet.create({
-    ...commonStyles,
     modalOverlay: {
         flex: 1,
         justifyContent: 'center',

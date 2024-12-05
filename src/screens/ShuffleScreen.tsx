@@ -3,7 +3,7 @@ import { View, ScrollView, Image, StyleSheet, TouchableOpacity, Text } from 'rea
 import { useRoute } from '@react-navigation/native';
 import { ShuffleScreenRouteProp } from '../navigationTypes';
 import { useClothes } from '../contexts/ClothesContext';
-import { commonStyles } from '../styles/commonStyles';
+import { theme } from '../styles/theme';
 import { ClothingItem } from '../navigationTypes';
 
 const ShuffleScreen = () => {
@@ -76,7 +76,6 @@ const ShuffleScreen = () => {
 export default ShuffleScreen;
 
 const styles = StyleSheet.create({
-  ...commonStyles,
   container: {
     padding: 20,
     alignItems: 'center',

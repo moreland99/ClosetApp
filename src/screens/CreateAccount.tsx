@@ -4,7 +4,7 @@ import { FIREBASE_AUTH } from '../firebase/firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import { CreateAccountScreenNavigationProp } from '../navigationTypes';
-import { commonStyles } from '../styles/commonStyles';
+import { theme } from '../styles/theme';
 
 const CreateAccount = () => {
     const navigation = useNavigation<CreateAccountScreenNavigationProp>();
@@ -95,5 +95,46 @@ const CreateAccount = () => {
 export default CreateAccount;
 
 const styles = StyleSheet.create({
-    ...commonStyles,
-});
+    container: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme.colors.background,
+    },
+    title: {
+        fontSize: theme.typography.heading.fontSize,
+        fontWeight: theme.typography.heading.fontWeight as any,
+        color: theme.colors.textPrimary,
+        marginBottom: theme.spacing.lg,
+    },
+    input: {
+        width: '80%',
+        height: 40,
+        borderWidth: 1,
+        borderColor: theme.colors.textSecondary,
+        borderRadius: 5,
+        paddingHorizontal: 10,
+        marginBottom: theme.spacing.md,
+        color: theme.colors.textPrimary,
+    },
+    button: {
+        width: '80%',
+        height: 40,
+        backgroundColor: theme.colors.primary,
+        borderRadius: 5,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    buttonText: {
+        fontSize: theme.typography.body.fontSize,
+        fontWeight: theme.typography.body.fontWeight as any,
+        color: theme.colors.textPrimary,    
+    },
+    linkButton: {
+        marginTop: theme.spacing.md,    
+    },
+    linkButtonText: {
+        
+    }
+    }
+);

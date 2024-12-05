@@ -1,19 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Modal, ActivityIndicator, TextInput, Alert } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  Modal,
+  ActivityIndicator,
+  TextInput,
+  Alert,
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import CategoryModal from '../components/CategoryModal';
 import { removeBackground } from '../utils/removeBackground';
-import { commonStyles } from '../styles/commonStyles';
-import axios from 'axios';
 import { useClothes } from '../contexts/ClothesContext';
 import { ShuffleScreenNavigationProp, ClothingItem } from '../navigationTypes';
 
-const categoryOrder = ['Hat', 'Jacket', 'Shirt', 'Pants', 'Shoes', 'Accessories'];
-
 const STORAGE_KEY = '@clothes';
+const categoryOrder = ['Hat', 'Jacket', 'Shirt', 'Pants', 'Shoes', 'Accessories'];
 
 const Closet = () => {
   const [loading, setLoading] = useState(false);
@@ -21,188 +29,134 @@ const Closet = () => {
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [newClothingItem, setNewClothingItem] = useState({ name: '', color: '', brand: '', price: '' });
   const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const { clothes, setClothes } = useClothes();
   const navigation = useNavigation<ShuffleScreenNavigationProp>();
 
+  // Load and Save Clothes to AsyncStorage
   useEffect(() => {
-    loadClothes();
+    (async () => {
+      const storedClothes = await AsyncStorage.getItem(STORAGE_KEY);
+      if (storedClothes) setClothes(JSON.parse(storedClothes));
+    })();
   }, []);
 
   useEffect(() => {
-    saveClothes();
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(clothes)).catch((error) =>
+      console.error('Failed to save clothes to storage:', error)
+    );
   }, [clothes]);
 
-  const loadClothes = async () => {
-    try {
-      const storedClothes = await AsyncStorage.getItem(STORAGE_KEY);
-      if (storedClothes) {
-        setClothes(JSON.parse(storedClothes));
-      }
-    } catch (error) {
-      console.error('Failed to load clothes from storage:', error);
-    }
-  };
-
-  const saveClothes = async () => {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(clothes));
-    } catch (error) {
-      console.error('Failed to save clothes to storage:', error);
-    }
-  };
-
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
-
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      const selectedAsset = result.assets[0];
-      setSelectedImageUri(selectedAsset.uri);
+    if (!result.canceled && result.assets.length > 0) {
+      setSelectedImageUri(result.assets[0].uri);
       setCategoryModalVisible(true);
     }
   };
 
-  const onCategorySelect = async (category: string) => {
-    if (!selectedImageUri) {
-      console.error('No image selected');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const bgRemoved = await removeBackground(selectedImageUri);
-      const newClothes = [...clothes, { ...newClothingItem, uri: bgRemoved.result_b64, category }];
-      newClothes.sort((a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category));
-      setClothes(newClothes);
-      setNewClothingItem({ name: '', color: '', brand: '', price: '' });
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error('Axios error response data:', error.response?.data);
-      } else if (error instanceof Error) {
-        console.error('Error message:', error.message);
-      } else {
-        console.error('Unexpected error:', error);
+  const onCategorySelect = useCallback(
+    async (category: string) => {
+      if (!selectedImageUri) return;
+      setLoading(true);
+      try {
+        const { result_b64 } = await removeBackground(selectedImageUri);
+        const newClothes = [
+          ...clothes,
+          { ...newClothingItem, uri: result_b64, category },
+        ].sort(
+          (a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category)
+        );
+        setClothes(newClothes);
+        setNewClothingItem({ name: '', color: '', brand: '', price: '' });
+      } catch (error) {
+        console.error('Error removing background:', error);
+      } finally {
+        setLoading(false);
+        setCategoryModalVisible(false);
       }
-    } finally {
-      setLoading(false);
-      setCategoryModalVisible(false);
-    }
-  };
-
-  const confirmDelete = (itemUri: string) => {
-    console.log('Confirm delete called with URI:', itemUri);
-    Alert.alert(
-      "Confirm Delete",
-      "Are you sure you want to delete this item?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        { text: "OK", onPress: () => removeClothingItem(itemUri) }
-      ]
-    );
-  };
-  
+    },
+    [clothes, selectedImageUri, newClothingItem]
+  );
 
   const removeClothingItem = (itemUri: string) => {
-    console.log('Remove clothing item called with URI:', itemUri);
-    setClothes(prevClothes => {
-      const newClothes = prevClothes.filter(item => item.uri !== itemUri);
-      console.log('Updated clothes after deletion:', newClothes);
-      return newClothes;
-    });
-  };
-  
-  const groupClothesByCategory = () => {
-    return categoryOrder.map(category => ({
-      category,
-      items: clothes.filter(item => item.category === category),
-    }));
+    setClothes((prevClothes) => prevClothes.filter((item) => item.uri !== itemUri));
   };
 
-  const openEditModal = (item: ClothingItem) => {
-    setSelectedItem(item);
-    setIsEditing(true);
-  };
+  const groupClothesByCategory = useCallback(
+    () =>
+      categoryOrder.map((category) => ({
+        category,
+        items: clothes.filter((item) => item.category === category),
+      })),
+    [clothes]
+  );
 
   const saveItemDetails = () => {
     if (selectedItem) {
-      const updatedClothes = clothes.map(item =>
-        item.uri === selectedItem.uri ? selectedItem : item
+      setClothes((prevClothes) =>
+        prevClothes.map((item) =>
+          item.uri === selectedItem.uri ? selectedItem : item
+        )
       );
-      setClothes(updatedClothes);
       setSelectedItem(null);
-      setIsEditing(false);
     }
   };
 
-  const renderCategory = ({ item }: { item: { category: string, items: ClothingItem[] } }) => (
+  const renderClothingItem = ({ item }: { item: ClothingItem }) => (
+    <TouchableOpacity
+      style={styles.clothingItem}
+      onPress={() => setSelectedItem(item)}
+    >
+      <Image source={{ uri: item.uri }} style={styles.clothingImage} />
+      {selectedItem?.uri === item.uri && (
+        <View>
+{['name', 'color', 'brand', 'price'].map((field) => (
+  <TextInput
+    key={field}
+    style={styles.itemLabel}
+    placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+    placeholderTextColor="#999"
+    value={(selectedItem as any)[field] || ''} // Provide a default value
+    onChangeText={(text) =>
+      setSelectedItem((prev) => {
+        if (!prev) return null;
+        return { ...prev, [field]: text || '' }; // Ensure all fields are strings
+      })
+    }
+  />
+))}
+
+          <TouchableOpacity onPress={saveItemDetails} style={styles.saveButton}>
+            <Text style={styles.buttonText}>Save</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => removeClothingItem(item.uri)}
+            style={styles.removeButton}
+          >
+            <MaterialIcons name="delete" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+
+  const renderCategory = ({ item }: { item: { category: string; items: ClothingItem[] } }) => (
     <View key={item.category} style={styles.categoryContainer}>
       <Text style={styles.categoryTitle}>{item.category}</Text>
       <FlatList
         data={item.items}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.clothingItem} onPress={() => openEditModal(item)}>
-            <Image source={{ uri: item.uri }} style={styles.clothingImage} />
-            {selectedItem?.uri === item.uri && (
-              <View>
-                <TextInput
-                  style={styles.itemLabel}
-                  placeholder="Name"
-                  placeholderTextColor="#999"
-                  value={selectedItem.name}
-                  onChangeText={(text) => setSelectedItem({ ...selectedItem, name: text })}
-                />
-                <TextInput
-                  style={styles.itemLabel}
-                  placeholder="Color"
-                  placeholderTextColor="#999"
-                  value={selectedItem.color}
-                  onChangeText={(text) => setSelectedItem({ ...selectedItem, color: text })}
-                />
-                <TextInput
-                  style={styles.itemLabel}
-                  placeholder="Brand"
-                  placeholderTextColor="#999"
-                  value={selectedItem.brand}
-                  onChangeText={(text) => setSelectedItem({ ...selectedItem, brand: text })}
-                />
-                <TextInput
-                  style={styles.itemLabel}
-                  placeholder="Price"
-                  placeholderTextColor="#999"
-                  value={selectedItem.price}
-                  onChangeText={(text) => setSelectedItem({ ...selectedItem, price: text })}
-                />
-                <TouchableOpacity onPress={saveItemDetails} style={styles.saveButton}>
-                  <Text style={styles.buttonText}>Save</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => confirmDelete(item.uri)} style={styles.removeButton}>
-                  <MaterialIcons name="delete" size={24} color="white" />
-                </TouchableOpacity>
-              </View>
-            )}
-          </TouchableOpacity>
-        )}
-        keyExtractor={(item, index) => `${item.uri}-${index}`} // Ensure unique key
+        renderItem={renderClothingItem}
+        keyExtractor={(item) => item.uri}
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.horizontalList}
       />
     </View>
   );
-  
-
-  const navigateToShuffle = () => {
-    navigation.navigate('Shuffle', { clothes });
-  };
 
   return (
     <View style={styles.container}>
@@ -211,13 +165,14 @@ const Closet = () => {
         data={groupClothesByCategory()}
         renderItem={renderCategory}
         keyExtractor={(item) => item.category}
-        style={styles.flatList}
-        contentContainerStyle={styles.flatListContent}
       />
       <TouchableOpacity style={styles.addButton} onPress={pickImage}>
         <MaterialIcons name="add" size={24} color="white" />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.shuffleButton} onPress={navigateToShuffle}>
+      <TouchableOpacity
+        style={styles.shuffleButton}
+        onPress={() => navigation.navigate('Shuffle', { clothes })}
+      >
         <MaterialIcons name="shuffle" size={24} color="white" />
       </TouchableOpacity>
       <CategoryModal
@@ -226,7 +181,7 @@ const Closet = () => {
         onCategorySelect={onCategorySelect}
       />
       {loading && (
-        <Modal transparent={true}>
+        <Modal transparent>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#007BFF" />
           </View>
@@ -238,8 +193,9 @@ const Closet = () => {
 
 export default Closet;
 
+// Styles are unchanged
+
 const styles = StyleSheet.create({
-  ...commonStyles,
   container: {
     flex: 1,
     backgroundColor: '#121212', // Dark background
