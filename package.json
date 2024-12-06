@@ -35,7 +35,8 @@
     "tailwind-react-native-classnames": "^1.5.1",
     "tailwind-rn": "^4.2.0",
     "tailwindcss-react-native": "^1.7.10",
-    "utf8": "^3.0.0"
+    "utf8": "^3.0.0",
+    "expo-camera": "~16.0.9"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

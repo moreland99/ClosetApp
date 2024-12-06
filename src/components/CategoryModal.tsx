@@ -9,7 +9,7 @@ interface CategoryModalProps {
   loading: boolean;
 }
 
-const categories = ['Hat', 'Jacket', 'Shirt', 'Pants', 'Shoes', 'Accessories'];
+const categories = ['Hats', 'Jackets', 'Shirts', 'Pants', 'Shoes', 'Accessories'];
 
 const CategoryModal: React.FC<CategoryModalProps> = ({ visible, onClose, onCategorySelect, loading }) => {
   return (

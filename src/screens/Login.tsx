@@ -8,11 +8,17 @@ import {
   ActivityIndicator,
   StyleSheet,
   ScrollView,
+  Image,
+  KeyboardAvoidingView,
+  Keyboard,
+  TouchableWithoutFeedback,
+  Platform,
 } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { FIREBASE_AUTH } from '../firebase/firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
-import { LoginScreenNavigationProp } from '../navigationTypes';
+import { LoginScreenNavigationProp } from '../navigationTypes'; 
+
 
 const Login = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
@@ -35,17 +41,29 @@ const Login = () => {
     try {
       await signInWithEmailAndPassword(FIREBASE_AUTH, email, password);
       Alert.alert('Login Successful', 'Welcome back!');
-      navigation.navigate('Closet');
+      navigation.navigate('InsideLayout'); // Navigate to InsideLayout
     } catch (error: any) {
       Alert.alert('Sign-In Failed', error.message);
     } finally {
       setLoading(false);
     }
+    
   };
 
   return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // Adjust behavior for iOS and Android
+    >
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.logo}>MyCloset</Text>
+            {/* Logo Section */}
+            <Image
+        source={require('../assets/splash.png')} // Path to splash.png
+        style={styles.logo} // Style to position and size the logo
+        resizeMode="contain" // Ensures the image scales without distortion
+      />
+      <Text style={styles.title}>MyCloset</Text>
       <View style={styles.card}>
         <Text style={styles.title}>Sign in to your account</Text>
         <TextInput
@@ -92,6 +110,8 @@ const Login = () => {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -102,20 +122,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#1E1E1E',
     paddingHorizontal: 16,
     paddingVertical: 24,
   },
   logo: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 24,
+    width: 120,
+    height: 120,
+    marginBottom: 0,
   },
   card: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#2E2E2E',
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -126,7 +145,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1f2937',
+    color: '#ffffff',
     marginBottom: 16,
   },
   input: {
@@ -161,7 +180,7 @@ const styles = StyleSheet.create({
   },
   checkboxText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#ffffff',
   },
   forgotText: {
     fontSize: 14,
