@@ -1,31 +1,37 @@
+// App.tsx
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { useColorScheme } from 'react-native';
+import { TailwindProvider } from 'tailwindcss-react-native';
+import { StatusBar } from 'expo-status-bar';
+import { Provider as PaperProvider } from 'react-native-paper';
+import { ClothesProvider } from './src/contexts/ClothesContext';
+import { User, onAuthStateChanged } from 'firebase/auth';
+import { FIREBASE_AUTH } from './src/firebase/firebaseConfig';
+
+// Screens
 import Login from './src/screens/Login';
 import Closet from './src/screens/Closet';
 import ShuffleScreen from './src/screens/ShuffleScreen';
 import FavoritesScreen from './src/screens/FavoritesScreen';
 import CreateAccount from './src/screens/CreateAccount';
-import { ClothesProvider } from './src/contexts/ClothesContext';
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { FIREBASE_AUTH } from './src/firebase/firebaseConfig';
-import { useColorScheme, Appearance } from 'react-native';
-import { TailwindProvider } from 'tailwindcss-react-native';
-import { StatusBar } from 'expo-status-bar';
 
+// Navigators
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+// Tab Navigator (InsideLayout)
 function InsideLayout() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarStyle: {
-          backgroundColor: '#121212', // Fully integrated dark background
-          borderTopWidth: 0, // Removes border for seamless integration
-          shadowColor: '#000', // Adds a subtle shadow for a polished look
+          backgroundColor: '#121212',
+          borderTopWidth: 0,
+          shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 4,
@@ -57,8 +63,8 @@ function InsideLayout() {
             );
           }
         },
-        tabBarActiveTintColor: '#4A90E2', // Modern blue accent for active tabs
-        tabBarInactiveTintColor: '#A9A9A9', // Neutral gray for inactive tabs
+        tabBarActiveTintColor: '#4A90E2',
+        tabBarInactiveTintColor: '#A9A9A9',
         headerShown: false,
       })}
     >
@@ -69,6 +75,7 @@ function InsideLayout() {
   );
 }
 
+// App Component
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const scheme = useColorScheme();
@@ -100,4 +107,3 @@ export default function App() {
     </TailwindProvider>
   );
 }
-

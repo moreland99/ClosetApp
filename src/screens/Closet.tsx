@@ -21,17 +21,22 @@ const Closet = () => {
   const [loading, setLoading] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
-  const { clothes, addClothingItem } = useClothes(); // Fetch Firestore data and save new items
+  const { clothes, addClothingItem } = useClothes();
 
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
-    if (!result.canceled && result.assets.length > 0) {
-      setSelectedImageUri(result.assets[0].uri);
-      setCategoryModalVisible(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        setSelectedImageUri(result.assets[0].uri);
+        setCategoryModalVisible(true); // Open modal immediately
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An error occurred while picking the image.');
     }
   };
 
@@ -44,17 +49,18 @@ const Closet = () => {
         id: Date.now().toString(),
         uri: result_b64,
         category,
-        name: '', // Placeholder values
+        name: '',
         color: '',
         brand: '',
         price: '',
       };
       await addClothingItem(newItem); // Save to Firestore
-      setCategoryModalVisible(false);
-    } catch {
+    } catch (error) {
       Alert.alert('Error', 'Failed to process image.');
     } finally {
       setLoading(false);
+      setCategoryModalVisible(false);
+      setSelectedImageUri(null); // Reset image state
     }
   };
 
@@ -85,7 +91,6 @@ const Closet = () => {
 
   return (
     <View style={{ backgroundColor: '#121212', flex: 1 }}>
-      <Text style={tw`text-center text-white text-2xl font-bold mt-4`}></Text>
       <FlatList
         data={categoryOrder.map((category) => ({
           category,
