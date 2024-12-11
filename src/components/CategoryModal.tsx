@@ -1,3 +1,4 @@
+// src/components/CategoryModal.tsx
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import tw from 'tailwind-react-native-classnames';
@@ -12,41 +13,39 @@ interface CategoryModalProps {
 const categories = ['Hats', 'Jackets', 'Shirts', 'Pants', 'Shoes', 'Accessories'];
 
 const CategoryModal: React.FC<CategoryModalProps> = ({ visible, onClose, onCategorySelect, loading }) => {
+  console.log('CategoryModal visible:', visible, 'loading:', loading);
+
   return (
     <Modal
-      animationType="slide"
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
+      // Remove extra modal props for now
     >
-      <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
-        {/* Modal Content */}
-        <View style={tw`w-4/5 bg-white p-5 rounded-lg items-center`}>
-          <Text style={tw`text-lg font-bold mb-4`}>Select Category</Text>
+      <View style={[{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+        <View style={[{ width: '80%', backgroundColor: '#fff', padding: 20, borderRadius: 10 }]}>
+          <Text style={[{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }]}>Select Category</Text>
           {categories.map((category) => (
             <TouchableOpacity
               key={category}
-              style={tw`w-full bg-blue-500 p-3 rounded-md mb-3 items-center`}
+              style={[{ backgroundColor: '#4A90E2', padding: 10, borderRadius: 5, marginBottom: 10, alignItems: 'center' }]}
               onPress={async () => {
-                onClose(); // Close modal immediately
-                await onCategorySelect(category); // Perform task in the background
+                console.log('Category selected:', category);
+                await onCategorySelect(category);
               }}
-              accessibilityLabel={`Select ${category} category`}
             >
-              <Text style={tw`text-white text-base`}>{category}</Text>
+              <Text style={{ color: '#fff' }}>{category}</Text>
             </TouchableOpacity>
           ))}
           <TouchableOpacity
-            style={tw`w-full bg-red-500 p-3 rounded-md mt-3 items-center`}
+            style={[{ backgroundColor: 'red', padding: 10, borderRadius: 5, marginTop: 10, alignItems: 'center' }]}
             onPress={onClose}
-            accessibilityLabel="Close category selection modal"
           >
-            <Text style={tw`text-white text-base`}>Close</Text>
+            <Text style={{ color: '#fff' }}>Close</Text>
           </TouchableOpacity>
         </View>
-        {/* Loading Indicator */}
         {loading && (
-          <View style={tw`absolute inset-0 justify-center items-center bg-black bg-opacity-50`}>
+          <View style={[{ position: 'absolute', top:0, left:0, right:0, bottom:0, justifyContent: 'center', alignItems: 'center', backgroundColor:'rgba(0,0,0,0.5)' }]}>
             <ActivityIndicator size="large" color="#007BFF" />
           </View>
         )}

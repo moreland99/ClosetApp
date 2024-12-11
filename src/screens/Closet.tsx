@@ -1,31 +1,45 @@
-import React, { useState, useRef } from 'react';
+// src/screens/Closet.tsx
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   Image,
   Alert,
-  ActivityIndicator,
-  Animated, // Import Animated
   StyleSheet,
+  FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import tw from 'tailwind-react-native-classnames';
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialIcons } from '@expo/vector-icons';
-import CategoryModal from '../components/CategoryModal';
 import { removeBackground } from '../utils/removeBackground';
 import { useClothes } from '../contexts/ClothesContext';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { RootStackParamList } from '../navigationTypes';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RouteProp } from '@react-navigation/native';
+
+type ClosetNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Closet'>;
+type ClosetRouteProp = RouteProp<RootStackParamList, 'Closet'>;
 
 const categoryOrder = ['Hats', 'Jackets', 'Shirts', 'Pants', 'Shoes', 'Accessories'];
 
 const Closet = () => {
-  const [loading, setLoading] = useState(false);
-  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
-  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const { clothes, addClothingItem } = useClothes();
+  const [loading, setLoading] = useState(false);
+  const navigation = useNavigation<ClosetNavigationProp>();
+  const route = useRoute<ClosetRouteProp>();
 
-  // Animated value for scroll position
-  const scrollY = useRef(new Animated.Value(0)).current;
+  // Check if we came back from CategorySelectScreen
+  useEffect(() => {
+    const { chosenCategory, selectedImageUri } = route.params ?? {};
+    if (chosenCategory && selectedImageUri) {
+      onCategorySelect(chosenCategory, selectedImageUri);
+      // Clear params after use
+      navigation.setParams({ chosenCategory: undefined, selectedImageUri: undefined });
+    }
+  }, [route.params]);
 
   const pickImage = async () => {
     try {
@@ -35,20 +49,19 @@ const Closet = () => {
         quality: 1,
       });
 
-      if (!result.canceled && result.assets.length > 0) {
-        setSelectedImageUri(result.assets[0].uri);
-        setCategoryModalVisible(true); // Open modal immediately
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const uri = result.assets[0].uri;
+        navigation.navigate('CategorySelectScreen', { selectedImageUri: uri });
       }
     } catch (error) {
       Alert.alert('Error', 'An error occurred while picking the image.');
     }
   };
 
-  const onCategorySelect = async (category: string) => {
-    if (!selectedImageUri) return;
+  const onCategorySelect = async (category: string, imageUri: string) => {
     setLoading(true);
     try {
-      const { result_b64 } = await removeBackground(selectedImageUri);
+      const { result_b64 } = await removeBackground(imageUri);
       const newItem = {
         id: Date.now().toString(),
         uri: result_b64,
@@ -58,13 +71,11 @@ const Closet = () => {
         brand: '',
         price: '',
       };
-      await addClothingItem(newItem); // Save to Firestore
+      await addClothingItem(newItem);
     } catch (error) {
       Alert.alert('Error', 'Failed to process image.');
     } finally {
       setLoading(false);
-      setCategoryModalVisible(false);
-      setSelectedImageUri(null); // Reset image state
     }
   };
 
@@ -78,11 +89,11 @@ const Closet = () => {
     <View style={tw`mb-1`}>
       <Text style={tw`text-white text-lg font-bold mb-1 px-4`}>{item.category}:</Text>
       {item.items.length > 0 ? (
-        <Animated.FlatList
+        <FlatList
           horizontal
           data={item.items}
           renderItem={renderClothingItem}
-          keyExtractor={(item) => item.uri}
+          keyExtractor={(citem) => citem.uri}
           showsHorizontalScrollIndicator={false}
         />
       ) : (
@@ -90,48 +101,21 @@ const Closet = () => {
           <Text style={tw`text-gray-400`}>No items added yet</Text>
         </View>
       )}
-      {/* Divider */}
       <View style={styles.divider} />
     </View>
   );
-  
-
-  // Animate the logo panel disappearing as you scroll
-  const logoOpacity = scrollY.interpolate({
-    inputRange: [0, 150], // Range of scroll
-    outputRange: [1, 0], // Fully visible to invisible
-    extrapolate: 'clamp', // Clamp values between 0 and 1
-  });
-
-  const logoHeight = scrollY.interpolate({
-    inputRange: [0, 150], // Range of scroll
-    outputRange: [80, 0], // Shrink height to 0
-    extrapolate: 'clamp', // Clamp values between 0 and 80
-  });
 
   return (
     <View style={{ backgroundColor: '#121212', flex: 1 }}>
-      {/* Animated Logo Section */}
-      <Animated.View
-        style={{
-          height: logoHeight,
-          opacity: logoOpacity,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
+      <View style={{ alignItems: 'center', justifyContent: 'center', height: 80 }}>
         <Image
           source={require('../assets/splash.png')}
           style={styles.logo}
           resizeMode="contain"
         />
-      </Animated.View>
+      </View>
 
-      {/* Spacer to move FlatList down */}
-      <View style={{ height: 50 }} /> {/* Adjust height as needed */}
-
-      {/* Main List */}
-      <Animated.FlatList
+      <FlatList
         data={categoryOrder.map((category) => ({
           category,
           items: clothes.filter((item) => item.category === category),
@@ -139,13 +123,8 @@ const Closet = () => {
         renderItem={renderCategory}
         keyExtractor={(item) => item.category}
         contentContainerStyle={tw`p-4`}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
       />
 
-      {/* Add Button */}
       <TouchableOpacity
         style={tw`absolute bottom-6 right-6 bg-blue-600 p-4 rounded-full shadow-lg`}
         onPress={pickImage}
@@ -153,19 +132,8 @@ const Closet = () => {
         <MaterialIcons name="add" size={28} color="white" />
       </TouchableOpacity>
 
-      {/* Category Modal */}
-      <CategoryModal
-        visible={categoryModalVisible}
-        onClose={() => setCategoryModalVisible(false)}
-        onCategorySelect={onCategorySelect}
-        loading={loading}
-      />
-
-      {/* Loading Indicator */}
       {loading && (
-        <View
-          style={tw`absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center`}
-        >
+        <View style={tw`absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center`}>
           <ActivityIndicator size="large" color="#4A90E2" />
         </View>
       )}
@@ -177,13 +145,13 @@ const styles = StyleSheet.create({
   logo: {
     width: '90%',
     height: '90%',
-    marginTop: 130,
+    marginTop: 30,
   },
   divider: {
-    height: 3, // Thickness of the line
-    backgroundColor: '#2C2C2C', // Line color
-    marginVertical: 10, // Spacing above and below the line
-    marginHorizontal:0, // Indentation from left and right
+    height: 3,
+    backgroundColor: '#2C2C2C',
+    marginVertical: 10,
+    marginHorizontal: 0,
   },
 });
 

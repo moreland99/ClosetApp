@@ -11,6 +11,7 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import { ClothesProvider } from './src/contexts/ClothesContext';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { FIREBASE_AUTH } from './src/firebase/firebaseConfig';
+import { RootStackParamList } from './src/navigationTypes';
 
 // Screens
 import Login from './src/screens/Login';
@@ -18,12 +19,11 @@ import Closet from './src/screens/Closet';
 import ShuffleScreen from './src/screens/ShuffleScreen';
 import FavoritesScreen from './src/screens/FavoritesScreen';
 import CreateAccount from './src/screens/CreateAccount';
+import CategorySelectScreen from './src/screens/CategorySelectScreen'; // New screen
 
-// Navigators
 const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// Tab Navigator (InsideLayout)
 function InsideLayout() {
   return (
     <Tab.Navigator
@@ -75,7 +75,6 @@ function InsideLayout() {
   );
 }
 
-// App Component
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const scheme = useColorScheme();
@@ -90,19 +89,24 @@ export default function App() {
   return (
     <TailwindProvider>
       <ClothesProvider>
-        <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            {user ? (
-              <Stack.Screen name="InsideLayout" component={InsideLayout} />
-            ) : (
-              <>
-                <Stack.Screen name="Login" component={Login} />
-                <Stack.Screen name="CreateAccount" component={CreateAccount} />
-              </>
-            )}
-          </Stack.Navigator>
-        </NavigationContainer>
+        <PaperProvider>
+          <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              {user ? (
+                <>
+                  <Stack.Screen name="InsideLayout" component={InsideLayout} />
+                  <Stack.Screen name="CategorySelectScreen" component={CategorySelectScreen} />
+                </>
+              ) : (
+                <>
+                  <Stack.Screen name="Login" component={Login} />
+                  <Stack.Screen name="CreateAccount" component={CreateAccount} />
+                </>
+              )}
+            </Stack.Navigator>
+          </NavigationContainer>
+        </PaperProvider>
       </ClothesProvider>
     </TailwindProvider>
   );

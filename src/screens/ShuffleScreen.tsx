@@ -48,7 +48,7 @@ const scrollY = useRef(new Animated.Value(0)).current;
   };
 
   function shuffleClothes(clothes: ClothingItem[]): { [key: string]: ClothingItem } {
-    const categories = ['Hat', 'Accessories', 'Jacket', 'Shirt', 'Pants', 'Shoes'];
+    const categories = ['Hats', 'Accessories', 'Jackets', 'Shirts', 'Pants', 'Shoes'];
     return categories.reduce((acc, category) => {
       const items = clothes.filter((item) => item.category === category);
       if (items.length > 0) {
