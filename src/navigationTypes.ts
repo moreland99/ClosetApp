@@ -11,6 +11,7 @@ export interface ClothingItem {
     color: string;
     brand: string;
     price: string;
+    items?: ClothingItem[];
 }
 
 // Define your root stack parameters including all screens and their params

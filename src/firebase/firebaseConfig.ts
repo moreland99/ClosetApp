@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { initializeAuth, browserLocalPersistence } from "firebase/auth";
-import { getFirestore, Firestore } from "firebase/firestore";
+import { getFirestore, Firestore, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Firebase configuration
@@ -24,6 +24,31 @@ const FIREBASE_AUTH = initializeAuth(FIREBASE_APP, {
 
 // Initialize Firestore
 const FIREBASE_FIRESTORE: Firestore = getFirestore(FIREBASE_APP);
+
+// Add Favorite Outfit Function
+export const addFavoriteOutfit = async (outfit: any[]) => {
+  try {
+    const favoritesCollection = collection(FIREBASE_FIRESTORE, "favorites");
+
+    await addDoc(favoritesCollection, {
+      id: Date.now().toString(),
+      outfit: outfit.map((item) => ({
+        id: item.id,
+        uri: item.uri,
+        category: item.category,
+        name: item.name,
+        color: item.color,
+        brand: item.brand,
+        price: item.price,
+      })),
+      createdAt: serverTimestamp(),
+    });
+    console.log("Favorite outfit successfully saved to Firestore!");
+  } catch (error) {
+    console.error("Error saving favorite outfit to Firestore:", error);
+    throw error;
+  }
+};
 
 // Export modules
 export { FIREBASE_APP, FIREBASE_AUTH, FIREBASE_FIRESTORE };

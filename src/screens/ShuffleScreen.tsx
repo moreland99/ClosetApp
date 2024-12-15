@@ -7,11 +7,14 @@ import {
   Animated,
   StyleSheet,
   Modal,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useClothes } from '../contexts/ClothesContext';
 import { ClothingItem } from '../navigationTypes';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { FIREBASE_FIRESTORE } from '../firebase/firebaseConfig';
 
 const categories = ['Hats', 'Accessories', 'Jackets', 'Shirts', 'Pants', 'Shoes'];
 
@@ -78,7 +81,7 @@ const ShuffleScreen = () => {
   };
 
   const resetCategories = () => {
-    setExcludedCategories([]);
+    setExcludedCategories([]); // Reset all excluded categories
   };
 
   const togglePauseCategory = (category: string) => {
@@ -87,13 +90,33 @@ const ShuffleScreen = () => {
     );
   };
 
-  const saveToFavorites = () => {
+  const saveToFavorites = async () => {
     const currentOutfit = Object.entries(shuffledClothes)
       .filter(([category]) => !excludedCategories.includes(category))
-      .map(([, item]) => item);
+      .map(([, item]) => ({
+        id: item?.id || Date.now().toString(),
+        uri: item?.uri || '',
+        category: item?.category || '',
+        name: item?.name || '',
+        color: item?.color || '',
+        brand: item?.brand || '',
+        price: item?.price || '',
+      }));
 
-    setFavorites((prevFavorites) => [...prevFavorites, currentOutfit]);
-    showToast();
+    try {
+      const favoritesCollection = collection(FIREBASE_FIRESTORE, 'favorites');
+      const docRef = await addDoc(favoritesCollection, {
+        outfit: currentOutfit,
+        createdAt: serverTimestamp(),
+      });
+
+      console.log('Favorite outfit successfully saved to Firestore:', docRef.id);
+      setFavorites((prevFavorites) => [...prevFavorites, currentOutfit]);
+      showToast();
+    } catch (error) {
+      console.error('Error saving favorite outfit to Firestore:', error);
+      Alert.alert('Error', 'Failed to save favorite outfit.');
+    }
   };
 
   return (
@@ -141,24 +164,6 @@ const ShuffleScreen = () => {
         })}
       </View>
 
-      {/* Info Modal */}
-      <Modal visible={infoVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>How This Page Works</Text>
-            <Text style={styles.modalText}>
-              - **Shuffle**: Randomly selects items for each category.{'\n'}
-              - **Pause**: Tap a card to keep that category static.{'\n'}
-              - **Remove**: Click the close button (X) to hide a category.{'\n'}
-              - **Save**: Save your current shuffle to favorites.
-            </Text>
-            <TouchableOpacity onPress={() => setInfoVisible(false)} style={styles.closeModalButton}>
-              <Text style={styles.closeModalText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
       {/* Action Buttons */}
       <View style={styles.iconButtonContainer}>
         <TouchableOpacity onPress={shuffleAgain} style={styles.iconButton}>
@@ -168,6 +173,13 @@ const ShuffleScreen = () => {
           <MaterialIcons name="favorite" size={30} color="#db2727" />
         </TouchableOpacity>
       </View>
+
+      {/* Reset Button */}
+      {excludedCategories.length > 0 && (
+  <TouchableOpacity onPress={resetCategories} style={styles.resetButton}>
+    <Text style={styles.resetText}>Show All Categories</Text>
+  </TouchableOpacity>
+)}
     </SafeAreaView>
   );
 };
@@ -176,107 +188,49 @@ const styles = StyleSheet.create({
   headerContainer: { flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 16 },
   title: { fontSize: 24, fontWeight: 'bold', color: '#FFF' },
   infoButton: { padding: 8 },
-  resetButton: {
-    backgroundColor: '#222222',
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginBottom: 8,
-  },
-  resetText: { color: '#FFF', fontWeight: 'bold' },
   cardGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     marginTop: 16,
-    flexGrow: 1,
   },
   card: {
     width: '47%',
-    aspectRatio: 1, // Proportional square
+    aspectRatio: 1,
     marginBottom: 10,
     backgroundColor: '#1E1E1E',
     borderRadius: 8,
-    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  cardLabel: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginTop: 0,
-    textAlign: 'center',
-  },
-  noItemText: { color: '#A9A9A9', fontSize: 14, textAlign: 'center' },
-  removeButton: { position: 'absolute', top: 4, right: 4 },
+  cardImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  iconButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    marginVertical: 8,
+  removeButton: { position: 'absolute', top: 4, right: 4 },
+  resetButton: {
+    backgroundColor: '#db2727',
+    padding: 12,
+    marginHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center',
   },
+  resetText: { color: '#FFF', fontWeight: 'bold' },
+  iconButtonContainer: { flexDirection: 'row', justifyContent: 'space-evenly', marginVertical: 8 },
   iconButton: {
     backgroundColor: '#1E1E1E',
-    padding: 15, // Increase padding
+    padding: 15,
     borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },  
-  toastMessage: {
-    position: 'absolute',
-    bottom: 50,
-    alignSelf: 'center',
-    backgroundColor: '#4AB751',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
   },
-  toastText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-  },
-  modalContainer: {
-    backgroundColor: '#1E1E1E',
-    padding: 20,
-    borderRadius: 10,
-    width: '90%',
-  },
-  modalTitle: {
-    color: 'white',
-    fontSize: 18,
+  noItemText: {
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  modalText: {
-    color: '#CCC',
-    fontSize: 14,
-    marginBottom: 10,
-  },
-  closeModalButton: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#FF5555',
-    padding: 8,
-    borderRadius: 5,
-  },
-  closeModalText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: '#FFF',
   },
 });
 

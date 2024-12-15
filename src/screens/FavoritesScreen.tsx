@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   FlatList,
@@ -12,16 +12,61 @@ import {
 import { useClothes } from '../contexts/ClothesContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ClothingItem } from '../navigationTypes';
+import { FIREBASE_FIRESTORE } from '../firebase/firebaseConfig';
+import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 
-const { width, height } = Dimensions.get('window'); // Get screen dimensions
+const { width } = Dimensions.get('window'); // Get screen dimensions
 
 const FavoritesScreen = () => {
   const { favorites, setFavorites } = useClothes();
   const [selectedFavorite, setSelectedFavorite] = useState<ClothingItem[] | null>(null);
 
-  // Remove favorite
-  const removeFavorite = (index: number) => {
-    setFavorites(favorites.filter((_, i) => i !== index));
+    // Fetch favorites from Firestore on load
+    useEffect(() => {
+      const fetchFavorites = async () => {
+        try {
+          const favoritesCollection = collection(FIREBASE_FIRESTORE, 'favorites');
+          const querySnapshot = await getDocs(favoritesCollection);
+  
+          const fetchedFavorites: ClothingItem[][] = [];
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.outfit) {
+              fetchedFavorites.push(data.outfit);
+            }
+          });
+  
+          setFavorites(fetchedFavorites);
+          console.log('Favorites successfully fetched from Firestore');
+        } catch (error) {
+          console.error('Error fetching favorites from Firestore:', error);
+        }
+      };
+  
+      fetchFavorites();
+    }, []);
+
+  // Remove favorite locally and in Firestore
+  const removeFavorite = async (index: number) => {
+    try {
+      const outfitToDelete = favorites[index];
+
+      // Query Firestore for matching outfit documents
+      const favoritesCollection = collection(FIREBASE_FIRESTORE, 'favorites');
+      const q = query(favoritesCollection, where('outfit', '==', outfitToDelete));
+      const querySnapshot = await getDocs(q);
+
+      // Delete matching documents
+      querySnapshot.forEach(async (document) => {
+        await deleteDoc(doc(FIREBASE_FIRESTORE, 'favorites', document.id));
+      });
+
+      // Update local state
+      setFavorites(favorites.filter((_, i) => i !== index));
+      console.log('Favorite outfit successfully deleted from Firestore');
+    } catch (error) {
+      console.error('Error deleting favorite outfit:', error);
+    }
   };
 
   // Render Preview Card (Grid Layout)
@@ -195,4 +240,3 @@ const styles = StyleSheet.create({
 });
 
 export default FavoritesScreen;
-
