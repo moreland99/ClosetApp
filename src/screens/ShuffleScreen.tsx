@@ -1,262 +1,282 @@
 import React, { useState, useRef } from 'react';
 import {
   View,
-  ScrollView,
   Image,
   Text,
   TouchableOpacity,
   Animated,
   StyleSheet,
+  Modal,
 } from 'react-native';
-import tw from 'tailwind-react-native-classnames';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRoute } from '@react-navigation/native';
-import { ShuffleScreenRouteProp } from '../navigationTypes';
 import { useClothes } from '../contexts/ClothesContext';
 import { ClothingItem } from '../navigationTypes';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+
+const categories = ['Hats', 'Accessories', 'Jackets', 'Shirts', 'Pants', 'Shoes'];
 
 const ShuffleScreen = () => {
-  const route = useRoute<ShuffleScreenRouteProp>();
   const { clothes, favorites, setFavorites } = useClothes();
 
-  const [shuffledClothes, setShuffledClothes] = useState<{ [key: string]: ClothingItem }>(() => shuffleClothes(clothes));
-  const [selectedCategory, setSelectedCategory] = useState('All');
-
-// Animated value for scroll position
-const scrollY = useRef(new Animated.Value(0)).current;
-
-  // Animated value for the "Saved" message
+  const [shuffledClothes, setShuffledClothes] = useState<{ [key: string]: ClothingItem }>(
+    () => shuffleClothes(clothes)
+  );
+  const [excludedCategories, setExcludedCategories] = useState<string[]>([]);
+  const [pausedCategories, setPausedCategories] = useState<string[]>([]);
+  const [infoVisible, setInfoVisible] = useState(false); // Controls modal visibility
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // Toast Message
   const showToast = () => {
-    // Fade in the message
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 500,
       useNativeDriver: true,
     }).start(() => {
-      // Fade out after a delay
       setTimeout(() => {
         Animated.timing(fadeAnim, {
           toValue: 0,
           duration: 500,
           useNativeDriver: true,
         }).start();
-      }, 1500); // Message stays for 1.5 seconds
+      }, 1500);
     });
   };
 
+  // Shuffle Clothes Logic
   function shuffleClothes(clothes: ClothingItem[]): { [key: string]: ClothingItem } {
-    const categories = ['Hats', 'Accessories', 'Jackets', 'Shirts', 'Pants', 'Shoes'];
     return categories.reduce((acc, category) => {
       const items = clothes.filter((item) => item.category === category);
       if (items.length > 0) {
-        const randomItem = items[Math.floor(Math.random() * items.length)];
-        acc[category] = randomItem;
+        acc[category] = items[Math.floor(Math.random() * items.length)];
       }
       return acc;
     }, {} as { [key: string]: ClothingItem });
   }
 
-  const shuffleCategory = (category: string) => {
-    const items = clothes.filter((item) => item.category === category);
-    if (items.length > 0) {
-      const randomItem = items[Math.floor(Math.random() * items.length)];
-      setShuffledClothes((prev) => ({ ...prev, [category]: randomItem }));
-    }
-  };
-
   const shuffleAgain = () => {
-    if (selectedCategory === 'All') {
-      setShuffledClothes(shuffleClothes(clothes));
-    } else {
-      shuffleCategory(selectedCategory);
-    }
+    setShuffledClothes((prev) => {
+      const newShuffled = { ...prev };
+
+      categories.forEach((category) => {
+        if (!pausedCategories.includes(category) && !excludedCategories.includes(category)) {
+          const items = clothes.filter((item) => item.category === category);
+          if (items.length > 0) {
+            newShuffled[category] = items[Math.floor(Math.random() * items.length)];
+          }
+        }
+      });
+
+      return newShuffled;
+    });
   };
 
-  const saveToFavorites = () => {
-    setFavorites([...favorites, Object.values(shuffledClothes)]);
-    showToast(); // Trigger the toast message
-  };
-
-  const renderPlaceholderOutfit = () => {
-    if (Object.keys(shuffledClothes).length === 0) {
-      return (
-        <Text style={tw`text-gray-400 text-center`}>
-          No clothes available. Start adding items to shuffle your outfit!
-        </Text>
-      );
-    }
-
-    return (
-      <View style={styles.outfitContainer}>
-        {Object.entries(shuffledClothes).map(([category, item]) => (
-          <View key={category} style={styles.card}>
-            <Image
-              source={{ uri: item.uri }}
-              style={styles.cardImage}
-            />
-          </View>
-        ))}
-      </View>
+  const toggleExcludeCategory = (category: string) => {
+    setExcludedCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
     );
   };
 
-  // Animate the logo panel disappearing as you scroll
-  const logoOpacity = scrollY.interpolate({
-    inputRange: [0, 150], // Range of scroll
-    outputRange: [1, 0], // Fully visible to invisible
-    extrapolate: 'clamp', // Clamp values between 0 and 1
-  });
+  const resetCategories = () => {
+    setExcludedCategories([]);
+  };
 
-  const logoHeight = scrollY.interpolate({
-    inputRange: [0, 150], // Range of scroll
-    outputRange: [80, 0], // Shrink height to 0
-    extrapolate: 'clamp', // Clamp values between 0 and 80
-  });
+  const togglePauseCategory = (category: string) => {
+    setPausedCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
+    );
+  };
 
+  const saveToFavorites = () => {
+    const currentOutfit = Object.entries(shuffledClothes)
+      .filter(([category]) => !excludedCategories.includes(category))
+      .map(([, item]) => item);
+
+    setFavorites((prevFavorites) => [...prevFavorites, currentOutfit]);
+    showToast();
+  };
 
   return (
     <SafeAreaView style={{ backgroundColor: '#121212', flex: 1 }}>
-        {/* Logo Section */}
-        <Animated.View
-  style={{
-    height: logoHeight,
-    opacity: logoOpacity,
-    alignItems: 'center',
-    justifyContent: 'center', // Aligns it to the same vertical placement
-  }}
->
-  <Image
-    source={require('../assets/splash.png')}
-    style={styles.logo}
-    resizeMode="contain"
-  />
-</Animated.View>
+      {/* Header */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.title}>Shuffle Outfits</Text>
+        <TouchableOpacity onPress={() => setInfoVisible(true)} style={styles.infoButton}>
+          <MaterialIcons name="info-outline" size={24} color="white" />
+        </TouchableOpacity>
+      </View>
 
-        <Text style={styles.title}>
-          Shuffle Outfits
-        </Text>
+      {/* Outfit Grid */}
+      <View style={styles.cardGrid}>
+        {categories.map((category) => {
+          if (excludedCategories.includes(category)) return null;
 
-        {/* Placeholder for Outfit */}
-        <View
-          style={{
-            height: '65%',
-            borderRadius: 15,
-            padding: 16,
-            marginBottom: 20,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          {renderPlaceholderOutfit()}
+          const item = shuffledClothes[category];
+          return (
+            <TouchableOpacity
+              key={category}
+              style={styles.card}
+              onPress={() => togglePauseCategory(category)}
+            >
+              {item ? (
+                <>
+                  <Image source={{ uri: item.uri }} style={styles.cardImage} resizeMode="contain" />
+                  {pausedCategories.includes(category) && (
+                    <View style={styles.overlay}>
+                      <MaterialIcons name="pause" size={48} color="rgba(255,255,255,0.6)" />
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={() => toggleExcludeCategory(category)}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#FF6949" />
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <Text style={styles.noItemText}>No items</Text>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Info Modal */}
+      <Modal visible={infoVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>How This Page Works</Text>
+            <Text style={styles.modalText}>
+              - **Shuffle**: Randomly selects items for each category.{'\n'}
+              - **Pause**: Tap a card to keep that category static.{'\n'}
+              - **Remove**: Click the close button (X) to hide a category.{'\n'}
+              - **Save**: Save your current shuffle to favorites.
+            </Text>
+            <TouchableOpacity onPress={() => setInfoVisible(false)} style={styles.closeModalButton}>
+              <Text style={styles.closeModalText}>Close</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+      </Modal>
 
-        {/* Icon Buttons Section */}
-        <View style={styles.iconButtonContainer}>
-          {/* Shuffle Icon */}
-          <TouchableOpacity
-            onPress={shuffleAgain}
-            style={styles.iconButton}
-          >
-            <MaterialIcons name="shuffle" size={45} color="white" />
-          </TouchableOpacity>
-
-          {/* Heart Icon */}
-          <TouchableOpacity
-            onPress={saveToFavorites}
-            style={styles.iconButton}
-          >
-            <MaterialIcons name="favorite" size={45} color="#db2727" />
-          </TouchableOpacity>
-        </View>
-
-      {/* Animated Toast Message */}
-      <Animated.View
-        style={[
-          styles.toastMessage,
-          { opacity: fadeAnim }, // Bind opacity to fade animation
-        ]}
-      >
-        <Text style={styles.toastText}>Outfit Saved!</Text>
-      </Animated.View>
+      {/* Action Buttons */}
+      <View style={styles.iconButtonContainer}>
+        <TouchableOpacity onPress={shuffleAgain} style={styles.iconButton}>
+          <MaterialIcons name="shuffle" size={30} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={saveToFavorites} style={styles.iconButton}>
+          <MaterialIcons name="favorite" size={30} color="#db2727" />
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  outfitContainer: {
+  headerContainer: { flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 16 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#FFF' },
+  infoButton: { padding: 8 },
+  resetButton: {
+    backgroundColor: '#222222',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  resetText: { color: '#FFF', fontWeight: 'bold' },
+  cardGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 8,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    flexGrow: 1,
   },
   card: {
-    width: '45%',
-    marginBottom: 16,
+    width: '47%',
+    aspectRatio: 1, // Proportional square
+    marginBottom: 10,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 8,
+    overflow: 'hidden',
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    justifyContent: 'center',
   },
   cardImage: {
     width: '100%',
-    height: 120,
-    borderRadius: 8,
-    resizeMode: 'contain',
+    height: '100%',
+    resizeMode: 'cover',
   },
   cardLabel: {
-    color: '#fff',
+    color: '#FFF',
     fontSize: 14,
-    marginTop: 8,
+    fontWeight: 'bold',
+    marginTop: 0,
     textAlign: 'center',
+  },
+  noItemText: { color: '#A9A9A9', fontSize: 14, textAlign: 'center' },
+  removeButton: { position: 'absolute', top: 4, right: 4 },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   iconButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',
-    alignItems: 'center',
-    marginBottom: 20,
+    marginVertical: 8,
   },
   iconButton: {
     backgroundColor: '#1E1E1E',
-    padding: 20,
+    padding: 15, // Increase padding
     borderRadius: 50,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
+    justifyContent: 'center',
+    alignItems: 'center',
+  },  
   toastMessage: {
     position: 'absolute',
-    top: 150, // Adjust position above the bottom buttons
+    bottom: 50,
     alignSelf: 'center',
-    backgroundColor: '#4ab751',
+    backgroundColor: '#4AB751',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 20,
-    zIndex: 1,
   },
-  toastText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+  toastText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
-  logo: {
+  modalContainer: {
+    backgroundColor: '#1E1E1E',
+    padding: 20,
+    borderRadius: 10,
     width: '90%',
-    height: '90%',
-    marginTop: 11,
-    alignSelf: 'center',
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 6,
-    marginTop: 16,
-    alignSelf: 'center',
+  modalTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  modalText: {
+    color: '#CCC',
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  closeModalButton: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#FF5555',
+    padding: 8,
+    borderRadius: 5,
+  },
+  closeModalText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 
